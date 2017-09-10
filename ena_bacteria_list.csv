@@ -1,0 +1,77 @@
+tableID	strain	size	seqID	project	proteins
+1466a	Helicobacter pylori DNA strain: ML1	1629815	AP014710	PRJDB3430	n/a
+1466b	Helicobacter pylori DNA strain: ML2	1562125	AP014711	n/a	
+1466c	Helicobacter pylori DNA strain: ML3	1629114	AP014712	n/a	
+1466d	Helicobacter pylori strain BM013A	1604233	CP007604	PRJNA245284	n/a
+1466e	Helicobacter pylori strain BM013B	1604212	CP007606	PRJNA245314	n/a
+1466f	Helicobacter pylori strain BM012B	1659060	CP007605	PRJNA245316	n/a
+1466g	Helicobacter pylori strain Hp238	1586473	CP010013	PRJNA265917	n/a
+1466h	Helicobacter pylori strain 26695-1MET	1667303	CP010436	PRJNA270699	n/a
+1467	Helicobacter pylori 35A	1566655	CP002096	PRJNA34603	"1,464 fasta 		UniProt"
+1468	Helicobacter pylori 51	1589954	CP000012	PRJNA9627	"1,412 fasta 		UniProt"
+1469	Helicobacter pylori 52	1568826	CP001680	PRJNA39507	"1,403 fasta 		UniProt"
+1470	Helicobacter pylori 83	1617426	CP002605	PRJNA34609	"1,603 fasta 		UniProt"
+1471	Helicobacter pylori 908	1549666	CP002184	PRJNA50869	"1,595 fasta 		UniProt"
+1472	Helicobacter pylori 2017	1548238	CP002571	PRJNA62769	"1,593 fasta 		UniProt"
+1473	Helicobacter pylori 2018	1562832	CP002572	PRJNA62771	"1,603 fasta 		UniProt"
+1474a	Helicobacter pylori 26695	1667867	AE000511	PRJNA233	"1,553 fasta 		UniProt"
+1474b	Helicobacter pylori 26695	1667892	CP003904	PRJNA175543	"1,580 fasta 		UniProt"
+1475a	Helicobacter pylori 26695-1	1667638	AP013354	PRJDB1447	n/a
+1475b	Helicobacter pylori 26695-1	1667638	CP010435	PRJNA270700	"1,529 fasta 		UniProt"
+1476	Helicobacter pylori 26695-1CH	1667302	AP013355	PRJDB1449	n/a
+1477	Helicobacter pylori 26695-1CL	1667239	AP013356	PRJDB1448	n/a
+1478	Helicobacter pylori Aklavik86	1494183	CP003476	PRJNA69925	"1,370 fasta 		UniProt"
+1479	Helicobacter pylori Aklavik117	1614447	CP003483	PRJNA69923	"1,516 fasta 		UniProt"
+1480	Helicobacter pylori B8	1673997	FN598874	PRJEA41831	"1,701 fasta 		UniProt"
+1481	Helicobacter pylori B38 strain B38	1576758	FM991728	PRJNA39685	"1,369 fasta 		UniProt"
+1482	Helicobacter pylori BM012A	1660425	CP006888	PRJNA224090	"1,551 fasta 		UniProt"
+1483	Helicobacter pylori BM012S	1660469	CP006889	PRJNA229079	"1,555 fasta 		UniProt"
+1484	Helicobacter pylori Cuz20	1635449	CP002076	PRJNA49029	"1,563 fasta 		UniProt"
+1485	Helicobacter pylori ELS37	1664587	CP002953	PRJNA69915	"1,553 fasta 		UniProt"
+1486	Helicobacter pylori F16	1575399	AP011940	PRJDA50589	"1,486 fasta 		UniProt"
+1487	Helicobacter pylori F30	1570564	AP011941	PRJDA50591	"1,475 fasta 		UniProt"
+1488	Helicobacter pylori F32	1578824	AP011943	PRJDA50593	"1,489 fasta 		UniProt"
+1489	Helicobacter pylori F57	1609006	AP011945	PRJDA50595	"1,515 fasta 		UniProt"
+1490	Helicobacter pylori G27	1652982	CP001173	PRJNA31341	"1,490 fasta 		UniProt"
+1491	Helicobacter pylori Gambia94/24	1709911	CP002332	PRJNA53317	"1,598 fasta 		UniProt"
+1492	Helicobacter pylori HPAG1	1596366	CP000241	PRJNA16183	"1,533 fasta 		UniProt"
+1493	Helicobacter pylori HUP-B14	1599280	CP003486	PRJNA95277	"1,484 fasta 		UniProt"
+1494	Helicobacter pylori India7	1675918	CP002331	PRJNA53321	"1,596 fasta 		UniProt"
+1495a	Helicobacter pylori J99	1643831	AE001439	PRJNA234	"1,488 fasta 		UniProt"
+1495b	Helicobacter pylori J99	1698366	CP011330	PRJNA281410	n/a
+1496	Helicobacter pylori J166	1650561	CP007603	PRJNA245313	n/a
+1497	Helicobacter pylori Lithuania75	1624644	CP002334	PRJNA53323	"1,541 fasta 		UniProt"
+1498	Helicobacter pylori NY40	1696917	AP014523	PRJDB1537	n/a
+1499	Helicobacter pylori OK113	1616617	AP012600	PRJDB693	"1,515 fasta 		UniProt"
+1500	Helicobacter pylori OK310	1591278	AP012601	PRJDB694	"1,489 fasta 		UniProt"
+1501	Helicobacter pylori oki102	1633212	CP006820	PRJNA215147	"1,471 fasta 		UniProt"
+1502	Helicobacter pylori oki112	1637925	CP006821	PRJNA215148	"1,467 fasta 		UniProt"
+1503	Helicobacter pylori oki128	1553826	CP006822	PRJNA215150	"1,389 fasta 		UniProt"
+1504	Helicobacter pylori oki154	1599700	CP006823	PRJNA215152	"1,432 fasta 		UniProt"
+1505	Helicobacter pylori oki422	1634852	CP006824	PRJNA215149	"1,461 fasta 		UniProt"
+1506	Helicobacter pylori oki673	1595058	CP006825	PRJNA215154	"1,430 fasta 		UniProt"
+1507	Helicobacter pylori oki828	1600345	CP006826	PRJNA215153	"1,439 fasta 		UniProt"
+1508	Helicobacter pylori oki898	1634875	CP006827	PRJNA215151	"1,481 fasta 		UniProt"
+1509	Helicobacter pylori P12	1673813	CP001217	PRJNA32291	"1,562 fasta 		UniProt"
+1510	Helicobacter pylori PeCan4	1629557	CP002074	PRJNA49027	"1,555 fasta 		UniProt"
+1511	Helicobacter pylori PeCan18	1660685	CP003475	PRJNA95275	"1,491 fasta 		UniProt"
+1512	Helicobacter pylori Puno120	1624979	CP002980	PRJNA69917	"1,523 fasta 		UniProt"
+1513	Helicobacter pylori Puno135	1646139	CP002982	PRJNA69919	"1,570 fasta 		UniProt"
+1514	Helicobacter pylori Rif1	1667883	CP003905	PRJNA175544	"1,581 fasta 		UniProt"
+1515	Helicobacter pylori Rif2	1667890	CP003906	PRJNA175625	"1,577 fasta 		UniProt"
+1516	Helicobacter pylori Sat464	1560342	CP002071	PRJNA49453	"1,499 fasta 		UniProt"
+1517	Helicobacter pylori Shi112	1663456	CP003474	PRJNA94347	"1,552 fasta 		UniProt"
+1518	Helicobacter pylori Shi169	1616909	CP003473	PRJNA94507	"1,513 fasta 		UniProt"
+1519	Helicobacter pylori Shi417	1665719	CP003472	PRJNA94345	"1,546 fasta 		UniProt"
+1520	Helicobacter pylori Shi470	1608548	CP001072	PRJNA29045	"1,564 fasta 		UniProt"
+1521	Helicobacter pylori SJM180	1658051	CP002073	PRJNA49025	"1,579 fasta 		UniProt"
+1522	Helicobacter pylori SNT49	1607577	CP002983	PRJNA69921	"1,512 fasta 		UniProt"
+1523	Helicobacter pylori SouthAfrica7	1653913	CP002336	PRJNA53319	"1,539 fasta 		UniProt"
+1524	Helicobacter pylori SouthAfrica20	1622903	CP006691	PRJNA209860	"1,699 fasta 		UniProt"
+1525	Helicobacter pylori UM032	1593537	CP005490	PRJNA196982	"1,411 fasta 		UniProt"
+1526	Helicobacter pylori UM037	1692794	CP005492	PRJNA196985	"1,628 fasta 		UniProt"
+1527	Helicobacter pylori UM066	1658047	CP005493	PRJNA196986	"1,578 fasta 		UniProt"
+1528	Helicobacter pylori UM298	1594544	CP006610	PRJNA196983	"1,546 fasta 		UniProt"
+1529	Helicobacter pylori UM299	1594569	CP005491	PRJNA196984	"1,566 fasta 		UniProt"
+1530	Helicobacter pylori v225d	1588278	CP001582	PRJNA36609	"1,538 fasta 		UniProt"
+1531	Helicobacter pylori XZ274	1634138	CP003419	PRJNA79003	"1,409 fasta 		UniProt"
