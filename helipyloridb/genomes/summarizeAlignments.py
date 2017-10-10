@@ -260,9 +260,6 @@ if __name__ == '__main__':
         if not subjectGenome in ['AE000511', 'CP001217']:
             continue
 
-        print(queryGenome)
-        print(subjectGenome)
-
         genomeDB.loadGenome(fileLocation + "/" + queryGenome + ".gb")
         genomeDB.loadGenome(fileLocation + "/" + subjectGenome + ".gb")
 
@@ -309,7 +306,7 @@ if __name__ == '__main__':
 
                 graph.add_edge(queryVert, subjVert, {'info': result}, True)
 
-        print(len(graph.vertices))
+        #print(len(graph.vertices))
 
         """
         
@@ -327,12 +324,12 @@ if __name__ == '__main__':
                     myRemoveVertexIDs.add(vertexID)
 
             for vertexID in myRemoveVertexIDs:
-                print("Remove: " + str(vertexID))
+                #print("Remove: " + str(vertexID))
                 mygraph.remove_vertex(vertexID)
 
             graph.cleanUpEmpty()
 
-            print(len(mygraph.vertices))
+            #print(len(mygraph.vertices))
             return mygraph
 
 
@@ -355,7 +352,7 @@ if __name__ == '__main__':
             for vertexID in myRemoveVertexIDs:
                 mygraph.remove_vertex(vertexID)
 
-            print(len(mygraph.vertices))
+            #print(len(mygraph.vertices))
             return mygraph
 
 
@@ -409,7 +406,7 @@ if __name__ == '__main__':
                     lengthScore = makeLengthScore(diamondResult) > 0.8
 
                     if identityScore and lengthScore:
-                        print("Step2", vertex.name, targetVertex.name, diamondResult)
+                        #print("Step2", vertex.name, targetVertex.name, diamondResult)
                         homolDB.addHomologyRelation(vertex.name, targetVertex.name)
 
         for vertexID in setRemoveVertexIDs:
@@ -417,7 +414,7 @@ if __name__ == '__main__':
 
         graph = removeEmptyVertices(graph)
 
-        print(len(graph.vertices))
+        #print(len(graph.vertices))
 
 
         """
@@ -449,7 +446,8 @@ if __name__ == '__main__':
                 vertex = mygraph.get_vertex(x)
 
                 if vertex.name[1] == 'SE87_00145':
-                    print(vertex.name)
+                    pass
+                    #print(vertex.name)
 
                 for edge in sorted(vertex.neighbors, key=lambda x: x.props['info'].identity, reverse=True):
 
@@ -489,7 +487,7 @@ if __name__ == '__main__':
                     if acceptEdge:
                         setRemoveVertexIDs.add(vertex.name)
                         setRemoveVertexIDs.add(targetVertex.name)
-                        print("acceptOneOfMultiple", minIdentity, minQueryLength, minSubjectLength, allowPartialLength, vertex.name, targetVertex.name, edge.props['info'])
+                        #print("acceptOneOfMultiple", minIdentity, minQueryLength, minSubjectLength, allowPartialLength, vertex.name, targetVertex.name, edge.props['info'])
 
                         homolDB.addHomologyRelation(vertex.name, targetVertex.name)
 
@@ -506,7 +504,7 @@ if __name__ == '__main__':
         graph = removeEmptyVertices(graph)
 
 
-        print(len(graph.vertices))
+        #print(len(graph.vertices))
 
         """
         
@@ -523,7 +521,7 @@ if __name__ == '__main__':
                 vertex = mygraph.get_vertex(x)
                 targetEdges = []
 
-                print(vertex)
+                #print(vertex)
 
                 for x in vertex.neighbors:
 
@@ -534,7 +532,7 @@ if __name__ == '__main__':
                         add = tv.props['sequence']
                         seqname = tv.name
 
-                    print(x.props['info'], seqname, add)
+                    #print(x.props['info'], seqname, add)
 
 
         sortedVerts = sorted([x for x in graph.vertices], key=lambda x: len(graph.get_vertex(x).props['sequence']), reverse=True)
@@ -605,12 +603,13 @@ if __name__ == '__main__':
             possibleMatch = (ones / len(countArray) ) > 0.9 or accumIdentity > 0.5
 
             if vertex.name[1] == 'U063_0074':
-                print(vertex)
+                pass
+                #print(vertex)
 
 
             if possibleMatch and allTargetsLengthMatch:
 
-                print(vertex.name, len(baseSeq), tree)
+                #print(vertex.name, len(baseSeq), tree)
 
                 setRemoveVertexIDs.add(vertex.name)
 
@@ -619,14 +618,14 @@ if __name__ == '__main__':
                     setRemoveVertexIDs.add(targetVertex.name)
                     homolDB.addHomologyRelation(vertex.name, targetVertex.name)
 
-                    print("Step3", vertex.name, targetVertex.name, edge.props['info'])
+                    #print("Step3", vertex.name, targetVertex.name, edge.props['info'])
 
         for vertexID in setRemoveVertexIDs:
             graph.remove_vertex(vertexID)
 
         graph = removeEmptyVertices(graph)
 
-        print(len(graph.vertices))
+        #print(len(graph.vertices))
 
 
         """
@@ -721,7 +720,7 @@ if __name__ == '__main__':
 
         graph = removeEmptyVertices(graph)
 
-        print(len(graph.vertices))
+        #print(len(graph.vertices))
 
         """
         
@@ -732,7 +731,7 @@ if __name__ == '__main__':
         graph = acceptOneOfMultiple(graph, 0.4, 0.8, 0.8, allowPartialLength=True, betterEdgeCheck=True, allowMultiple=True)
         graph.cleanUpEmpty()
 
-        print(len(graph.vertices))
+        #print(len(graph.vertices))
 
         """
         
@@ -767,7 +766,8 @@ if __name__ == '__main__':
                     coverage += 1.0
 
             if vertex.name[1] == 'SE87_05730':
-                print(vertex)
+                pass
+                #print(vertex)
 
             if coverage < len(baseSeq)/2:
                 #not enough coverage!
