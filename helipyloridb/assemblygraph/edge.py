@@ -9,3 +9,7 @@ class Edge:
 
         self.source = None
         self.target = None
+
+    def __str__(self):
+
+        return str(self.source) + " " + str(self.target) + " " + str(self.props)

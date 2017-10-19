@@ -9,6 +9,8 @@ from intervaltree import IntervalTree
 from assemblygraph.edge import Edge
 from assemblygraph.graph import Graph
 from assemblygraph.vertex import Vertex
+from database.genomedb import GenomeDB
+from database.homologydb import HomologyDatabase
 from utils import fileLocation
 
 
@@ -79,142 +81,8 @@ class DiamondResult:
 
         return ret
 
-class GenomeDB:
-
-    def __init__(self, location, loadAll = False):
-
-        self.genomes = defaultdict(lambda: dict())
-
-        if loadAll:
-            for file in glob.glob(location+'/*.gb'):
-                self.loadGenome(file)
-
-    def loadGenome(self, file):
-
-        gbParser = SeqIO.parse(file, "embl")
-
-        for gb_record in gbParser:
-
-            genomeID = gb_record.name
-
-            for feature in gb_record.features:
-
-                if not feature.type.upper() == 'CDS':
-                    continue
-
-                locTag = feature.qualifiers.get('locus_tag', [None])[0]
-                proID = feature.qualifiers.get('protein_id', [None])[0]
-                translation = feature.qualifiers.get('translation', [None])[0]
-
-                productID = locTag if locTag != None else proID
-
-                if productID == None:
-                    print("CDS without id:")
-                    print(feature)
-                    continue
-
-                if translation == None:
-                    continue
-
-                self.genomes[genomeID][productID] = translation
-
-        print("Loaded Genome: " + file)
-
-    def get_sequence(self, genome, productID):
-        return self.genomes.get(genome, {}).get(productID, None)
-
-class HomologyDatabase:
-
-    def __init__(self):
-
-        self.homologies = dict()
-        self.homologyProperties = defaultdict(lambda: dict)
-        self.combinations = defaultdict(set)
-
-    def addHomologyRelation(self, id1, id2, properties=None):
-
-        for x in self.homologies:
-
-            allElems = self.homologies[x]
-
-            if id1 in allElems or id2 in allElems:
-                allElems.add(id1)
-                allElems.add(id2)
-
-                self.homologies[x] = allElems
-                if properties != None:
-                    self.homologyProperties[x][(id1, id2)] = properties
-                return
-
-        newRel = set()
-        newRel.add(id1)
-        newRel.add(id2)
-
-        homID = "HOMID" + str(len(self.homologies))
-        self.homologies[homID] = newRel
-        if properties != None:
-            self.homologyProperties[homID][(id1, id2)] = properties
-
-    def finalize(self):
-
-        changed = True
-        while changed:
-
-            allIDs = [x for x in self.homologies]
-            changed = False
-
-            for i in range(0, len(allIDs)):
-                if changed:
-                    break
-
-                for j in range(i+1, len(allIDs)):
-
-                    xi = allIDs[i]
-                    xj = allIDs[j]
-
-                    setGenesI = self.homologies[xi]
-                    setGenesJ = self.homologies[xj]
-
-                    if len(setGenesI.intersection(setGenesJ)) > 0:
-                        newSet = setGenesI.union(setGenesJ)
-                        self.homologies[xi] = newSet
-                        del self.homologies[xj]
-                        changed=True
-
-                        break
 
 
-
-
-    def addCombination(self, id1, listIDs):
-
-        for x in listIDs:
-            self.combinations[id1].add(x)
-
-    def printCombinations(self):
-
-        print("Combinations")
-
-        for x in self.combinations:
-            print(x, str(self.combinations[x]))
-
-    def __str__(self):
-
-
-        outStr = io.StringIO()
-
-        for homid in self.homologies:
-
-            allRels = self.homologies[homid]
-
-            for rel in allRels:
-                outStr.write(homid + "\t" + "\t".join(rel) + "\n")
-
-
-        outString = outStr.getvalue()
-        outStr.close()
-
-        return outString
 
 
 if __name__ == '__main__':
@@ -253,11 +121,12 @@ if __name__ == '__main__':
         queryGenome = afile[1]
 
 
+        wantedGenomes = ['AE000511', 'CP001217', 'AE001439']
 
-        if not queryGenome in ['AE000511', 'CP001217']:
+        if not queryGenome in wantedGenomes:
             continue
 
-        if not subjectGenome in ['AE000511', 'CP001217']:
+        if not subjectGenome in wantedGenomes:
             continue
 
         genomeDB.loadGenome(fileLocation + "/" + queryGenome + ".gb")
@@ -407,7 +276,7 @@ if __name__ == '__main__':
 
                     if identityScore and lengthScore:
                         #print("Step2", vertex.name, targetVertex.name, diamondResult)
-                        homolDB.addHomologyRelation(vertex.name, targetVertex.name)
+                        homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': "2"})
 
         for vertexID in setRemoveVertexIDs:
             graph.remove_vertex(vertexID)
@@ -436,7 +305,7 @@ if __name__ == '__main__':
             return None
 
 
-        def acceptOneOfMultiple(mygraph, minIdentity=0.9, minQueryLength=0.85, minSubjectLength=0.85, allowPartialLength=False, allowMultiple=False,betterEdgeCheck=False):
+        def acceptOneOfMultiple(mygraph, minIdentity=0.9, minQueryLength=0.85, minSubjectLength=0.85, allowPartialLength=False, allowMultiple=False,betterEdgeCheck=False, stepID='1ofMany'):
 
             sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']),
                                  reverse=True)
@@ -489,7 +358,10 @@ if __name__ == '__main__':
                         setRemoveVertexIDs.add(targetVertex.name)
                         #print("acceptOneOfMultiple", minIdentity, minQueryLength, minSubjectLength, allowPartialLength, vertex.name, targetVertex.name, edge.props['info'])
 
-                        homolDB.addHomologyRelation(vertex.name, targetVertex.name)
+                        if vertex.name[1] == 'HPP12_1404':
+                            print(vertex)
+
+                        homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': stepID})
 
                         if not allowMultiple:
                             break
@@ -511,6 +383,34 @@ if __name__ == '__main__':
         STEP 3: One sequence, multiple sequences map
         
         """
+
+        def printEdge(edge):
+
+            print(edge.source.name, edge.target.name, edge.props['info'])
+
+        def printGraphEdges(mygraph):
+
+            sortedVerts = sorted([x for x in mygraph.vertices],
+                                 key=lambda x: len(mygraph.get_vertex(x).props['sequence']),
+                                 reverse=True)
+
+            seenDiamondInfos = set()
+            for x in sortedVerts:
+
+                vertex = mygraph.get_vertex(x)
+
+                for edge in vertex.neighbors:
+
+                    diamondInfo = edge.props.get('info', None)
+
+                    if diamondInfo == None:
+                        continue
+
+                    if diamondInfo not in seenDiamondInfos:
+                        printEdge(edge)
+                        seenDiamondInfos.add(diamondInfo)
+
+
 
         def printGraph(mygraph):
 
@@ -549,7 +449,7 @@ if __name__ == '__main__':
             allTargetsLengthMatch = True
             accumIdentity = 0.0
 
-            if vertex.name[1] == 'SE87_03440':
+            if vertex.name[1] == 'HP_0424':
                 vertex.name = vertex.name
 
 
@@ -573,7 +473,7 @@ if __name__ == '__main__':
 
                     accumIdentity += len(targetVertexIDObj) * diamondResult.identity
 
-                    if len(targetVertexIDObj) / len(targetSeq) >= 0.8:
+                    if len(targetVertexIDObj) / len(targetSeq) >= 0.7: #todo find a good value!
                         continue
                     elif len(targetVertexIDObj) / (len(targetSeq)-targetVertexIDObj.start+1) >= 0.95: #suffix
                         continue
@@ -602,23 +502,24 @@ if __name__ == '__main__':
 
             possibleMatch = (ones / len(countArray) ) > 0.9 or accumIdentity > 0.5
 
-            if vertex.name[1] == 'U063_0074':
-                pass
-                #print(vertex)
+            if vertex.name[1] == 'HP_0060':
+                print(vertex)
 
 
             if possibleMatch and allTargetsLengthMatch:
 
                 #print(vertex.name, len(baseSeq), tree)
-
-                setRemoveVertexIDs.add(vertex.name)
-
+                otherNames = set()
                 for edge in vertex.neighbors:
-                    targetVertex = edge.target
-                    setRemoveVertexIDs.add(targetVertex.name)
-                    homolDB.addHomologyRelation(vertex.name, targetVertex.name)
+                    otherNames.add(edge.source.name)
+                    otherNames.add(edge.target.name)
 
-                    #print("Step3", vertex.name, targetVertex.name, edge.props['info'])
+                for x in otherNames:
+                    setRemoveVertexIDs.add(x)
+
+                otherNames.remove(vertex.name)
+
+                homolDB.addCombination(vertex.name, otherNames)
 
         for vertexID in setRemoveVertexIDs:
             graph.remove_vertex(vertexID)
@@ -638,87 +539,94 @@ if __name__ == '__main__':
         
         """
 
-        sortedVerts = sorted([x for x in graph.vertices], key=lambda x: len(graph.get_vertex(x).props['sequence']), reverse=True)
-        setRemoveVertexIDs = set()
+        def greedyBuildFromSubset(mygraph, sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target))):
 
-        for x in sortedVerts:
-            vertex = graph.get_vertex(x)
-            targetEdges = []
+            sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']), reverse=True)
+            setRemoveVertexIDs = set()
 
-            baseSeq = vertex.props['sequence']
-            countArray = [0] * len(baseSeq)
+            for x in sortedVerts:
+                vertex = mygraph.get_vertex(x)
+                targetEdges = []
 
-            allTargetsLengthMatch = True
-            accumIdentity = 0.0
+                baseSeq = vertex.props['sequence']
+                countArray = [0] * len(baseSeq)
 
-            vertexTree = IntervalTree()
-            target2tree = defaultdict(IntervalTree)
-            target2vertex = dict()
+                allTargetsLengthMatch = True
+                accumIdentity = 0.0
 
-            if vertex.name[1] == 'SE87_04025':
-                vertex.name = vertex.name
+                vertexTree = IntervalTree()
+                target2tree = defaultdict(IntervalTree)
+                target2vertex = dict()
 
-            if len(vertex.neighbors) < 2:
-                continue
+                if vertex.name[1] == 'HP_0424':
+                    vertex.name = vertex.name
 
-            usedEdges = []
+                if len(vertex.neighbors) < 2:
+                    continue
 
-            for edge in sorted(vertex.neighbors, key=lambda x: len(getIDObj(x, x.target)), reverse=True):
+                usedEdges = []
 
-                targetVertex = edge.target
-                targetSeq = targetVertex.props['sequence']
+                for edge in sorted(vertex.neighbors, key=sortingFunctionAssembly, reverse=True):
 
-                diamondResult = edge.props['info']
-                targetVertexIDObj = getIDObj(edge, targetVertex)
-                vertexIDObj = getIDObj(edge, vertex)
+                    targetVertex = edge.target
+                    targetSeq = targetVertex.props['sequence']
 
-                if not vertexTree.overlaps(vertexIDObj.start, vertexIDObj.end) and not target2tree[targetVertex.name].overlaps(targetVertexIDObj.start, targetVertexIDObj.end):
+                    diamondResult = edge.props['info']
+                    targetVertexIDObj = getIDObj(edge, targetVertex)
+                    vertexIDObj = getIDObj(edge, vertex)
 
-                    usedEdges.append(edge)
+                    if not vertexTree.overlaps(vertexIDObj.start, vertexIDObj.end) and not target2tree[targetVertex.name].overlaps(targetVertexIDObj.start, targetVertexIDObj.end):
 
-                    target2vertex[targetVertex.name] = targetVertex
-                    vertexTree.addi(vertexIDObj.start, vertexIDObj.end)
-                    target2tree[targetVertex.name].addi(targetVertexIDObj.start, targetVertexIDObj.end)
+                        usedEdges.append(edge)
 
-
-            if len(target2tree) == 0:
-                continue
-
-            acceptAll = True
-            totalExplained = 0
-            for targetName in target2tree:
-                used = sum([x.length() for x in target2tree[targetName]])
-                totalExplained += used
-
-                if used / len(target2vertex[targetName].props['sequence']) < 0.8:
-                    acceptAll = False
-                    break
-
-            if len(target2tree) < 2:
-                continue
-
-            if acceptAll == False:
-                continue
-
-            if totalExplained/len(vertex.props['sequence']) < 0.8:
-                continue
-
-            for x in target2vertex:
-                setRemoveVertexIDs.add(target2vertex[x].name)
-
-            combination = set()
-            for edge in usedEdges:
-                targetVertex = edge.target
-                setRemoveVertexIDs.add(targetVertex.name)
-                combination.add( targetVertex.name )
-
-            homolDB.addCombination(vertex.name, combination)
+                        target2vertex[targetVertex.name] = targetVertex
+                        vertexTree.addi(vertexIDObj.start, vertexIDObj.end)
+                        target2tree[targetVertex.name].addi(targetVertexIDObj.start, targetVertexIDObj.end)
 
 
-        for vertexID in setRemoveVertexIDs:
-            graph.remove_vertex(vertexID)
+                if len(target2tree) == 0:
+                    continue
 
-        graph = removeEmptyVertices(graph)
+                acceptAll = True
+                totalExplained = 0
+                for targetName in target2tree:
+                    used = sum([x.length() for x in target2tree[targetName]])
+                    totalExplained += used
+
+                    if used / len(target2vertex[targetName].props['sequence']) < 0.8:
+                        acceptAll = False
+                        break
+
+                if len(target2tree) < 2:
+                    continue
+
+                if acceptAll == False:
+                    continue
+
+                if totalExplained/len(vertex.props['sequence']) < 0.8:
+                    continue
+
+                for x in target2vertex:
+                    setRemoveVertexIDs.add(target2vertex[x].name)
+
+                combination = set()
+                for edge in usedEdges:
+                    targetVertex = edge.target
+                    setRemoveVertexIDs.add(targetVertex.name)
+                    combination.add( targetVertex.name )
+
+                homolDB.addCombination(vertex.name, combination)
+
+
+            for vertexID in setRemoveVertexIDs:
+                mygraph.remove_vertex(vertexID)
+
+            mygraph = removeEmptyVertices(mygraph)
+
+            return mygraph
+
+        graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity)
+        graph = greedyBuildFromSubset(graph, lambda x: len(getIDObj(x, x.target)))
 
         #print(len(graph.vertices))
 
@@ -728,7 +636,7 @@ if __name__ == '__main__':
         
         """
 
-        graph = acceptOneOfMultiple(graph, 0.4, 0.8, 0.8, allowPartialLength=True, betterEdgeCheck=True, allowMultiple=True)
+        graph = acceptOneOfMultiple(graph, 0.4, 0.8, 0.8, allowPartialLength=True, betterEdgeCheck=True, allowMultiple=False, stepID='1OfManyBad')
         graph.cleanUpEmpty()
 
         #print(len(graph.vertices))
@@ -789,15 +697,18 @@ if __name__ == '__main__':
             graph.remove_vertex(vertexID)
 
 
-        printGraph(graph)
+        printGraphEdges(graph)
 
-        homolDB.finalize()
-        homolDB.printCombinations()
+    homolDB.finalize()
+    homolDB.printCombinations()
 
-        print("HomolDB")
+    print("HomolDB")
 
-        print(homolDB)
+    with open("/mnt/raidproj/proj/projekte/dataintegration/hpyloriDB/hpp12_hp", 'w') as outfile:
 
-        exit(0)
+        outfile.write(str(homolDB))
+
+
+    exit(0)
 
 
