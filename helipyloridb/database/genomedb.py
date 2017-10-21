@@ -47,3 +47,16 @@ class GenomeDB:
 
     def get_sequence(self, genome, productID):
         return self.genomes.get(genome, {}).get(productID, None)
+
+    def writeCSV(self, outpath):
+
+        with open(outpath, 'w') as outfile:
+
+            for genome in self.genomes:
+                for seqid in self.genomes[genome]:
+                    protSeq = self.genomes[genome][seqid]
+                    allelems = [genome, seqid, len(protSeq), protSeq]
+
+                    allelems = [str(x) for x in allelems]
+
+                    outfile.write("\t".join(allelems) + "\n")

@@ -53,10 +53,10 @@ class Graph:
         if not self.contains_vertex(vertex_to):
             self.add_vertex(vertex_to)
 
-        vertex_from.add_neighbor(vertex_to, edge_props)
+        vertex_from.add_neighbor(vertex_to, edge_props, undirected=undirected)
 
         if undirected:
-            vertex_to.add_neighbor(vertex_from, edge_props)
+            vertex_to.add_neighbor(vertex_from, edge_props, undirected=undirected)
 
     def remove_vertex(self, vertex):
 

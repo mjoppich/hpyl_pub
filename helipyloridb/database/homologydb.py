@@ -1,6 +1,30 @@
 import io
 from collections import defaultdict
 
+from utils import mergeDicts
+
+
+class MatchingRegion:
+
+    def __init__(self, range1, range2):
+
+        self.range1 = range1
+        self.range2 = range2
+
+
+
+class MultiCombination:
+
+    def __init__(self, props=None):
+
+        self.props = props
+        self.elems = []
+
+    def addMatch(self, elemInterval1, elemInterval2):
+
+        match = MatchingRegion(elemInterval1, elemInterval2)
+        self.elems.append(match)
+
 
 class HomologyDatabase:
 
@@ -8,9 +32,37 @@ class HomologyDatabase:
 
         self.homologies = dict()
         self.homologyProperties = defaultdict(lambda: dict())
+
         self.combinations = defaultdict(set)
+        self.combinationProperties = defaultdict(lambda: dict())
+
+        self.multiCombinations = []
+
+    def findHomologyForID(self, searchID):
+
+        for homolID in self.homologies:
+
+            elems = self.homologies[homolID]
+
+            for id in elems:
+                if id == searchID:
+                    return homolID
+
+        return None
+
+    def addMultiCombination(self, multiCombi):
+
+        if not isinstance(multiCombi, MultiCombination):
+            raise ValueError("multiCombi must be MultiCombination")
+
+        self.multiCombinations.append(multiCombi)
 
     def addHomologyRelation(self, id1, id2, properties=None):
+
+        if id1 < id2:
+            idtuple = (id1, id2)
+        else:
+            idtuple = (id2, id1)
 
         for x in self.homologies:
 
@@ -22,7 +74,7 @@ class HomologyDatabase:
 
                 self.homologies[x] = allElems
                 if properties != None:
-                    self.homologyProperties[x][(id1, id2)] = properties
+                    self.homologyProperties[x][ idtuple ] = mergeDicts(self.homologyProperties[x].get(idtuple, None), properties)
                 return
 
         newRel = set()
@@ -32,7 +84,7 @@ class HomologyDatabase:
         homID = "HOMID" + str(len(self.homologies))
         self.homologies[homID] = newRel
         if properties != None:
-            self.homologyProperties[homID][(id1, id2)] = properties
+            self.homologyProperties[homID][ idtuple ] = properties
 
     def finalize(self):
 
@@ -65,10 +117,12 @@ class HomologyDatabase:
 
 
 
-    def addCombination(self, id1, listIDs):
+    def addCombination(self, id1, listIDs, properties):
 
         for x in listIDs:
             self.combinations[id1].add(x)
+
+        self.combinationProperties[id1] = mergeDicts(self.combinationProperties[id1], properties)
 
     def printCombinations(self):
 

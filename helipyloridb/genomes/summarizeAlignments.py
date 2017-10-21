@@ -9,79 +9,11 @@ from intervaltree import IntervalTree
 from assemblygraph.edge import Edge
 from assemblygraph.graph import Graph
 from assemblygraph.vertex import Vertex
+from database.DiamondResult import DiamondResult
+from database.ModInterval import ModInterval
 from database.genomedb import GenomeDB
-from database.homologydb import HomologyDatabase
+from database.homologydb import HomologyDatabase, MultiCombination
 from utils import fileLocation
-
-
-class IDObj:
-    def __init__(self, seqid, start, end, genome):
-        self.seqid = seqid
-        self.start = int(start)
-        self.end = int(end)
-        self.genome = genome
-
-    def idtuple(self):
-        return (self.genome, self.seqid)
-
-    def __len__(self):
-        return self.end-self.start+1
-
-    def __str__(self):
-        return "{genom} {seqid} ({start}-{end})".format(genom=self.genome, seqid=self.seqid, start=self.start, end=self.end)
-
-    def __repr__(self):
-        return self.__str__()
-
-class DiamondResult:
-    def __init__(self):
-        #query id, subject id, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score, sequence
-
-        self.query = None
-        self.subject = None
-
-        self.identity = None
-        self.alignment_length = None
-        self.mismatches = 0
-        self.gap_opens = 0
-        self.evalue = 1.0
-        self.bit_score = 0
-
-    def __str__(self):
-
-        allelems = [self.query.seqid, self.query.start, self.query.end, self.subject.seqid, self.subject.start, self.subject.end, self.identity, self.alignment_length, self.mismatches, self.gap_opens, self.evalue, self.bit_score]
-
-        return "\t".join( [str(x) for x in allelems] )
-
-    def __len__(self):
-        return self.alignment_length
-
-    @classmethod
-    def from_line(cls, line, qgenom, sgenom):
-
-        aline = [x.strip() for x in line.split('\t')]
-
-        if len(aline) < 12:
-            print("Invalid line: " + line)
-            exit(-1)
-
-        ret = DiamondResult()
-        query = IDObj(aline[0], aline[6], aline[7], qgenom)
-        subj = IDObj(aline[1], aline[8], aline[9], sgenom)
-
-        ret.identity = float(aline[2]) / 100.0
-        ret.alignment_length = int(aline[3])
-        ret.mismatches = int(aline[4])
-        ret.gap_opens = int(aline[5])
-        ret.evalue = float(aline[10])
-        ret.bit_score = float(aline[11])
-
-        ret.subject = subj
-        ret.query = query
-
-        return ret
-
-
 
 
 
@@ -305,7 +237,7 @@ if __name__ == '__main__':
             return None
 
 
-        def acceptOneOfMultiple(mygraph, minIdentity=0.9, minQueryLength=0.85, minSubjectLength=0.85, allowPartialLength=False, allowMultiple=False,betterEdgeCheck=False, stepID='1ofMany'):
+        def acceptOneOfMultiple(mygraph, minIdentity=0.8, minQueryLength=0.85, minSubjectLength=0.85, allowPartialLength=False, allowMultiple=False,betterEdgeCheck=False, stepID='1ofMany'):
 
             sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']),
                                  reverse=True)
@@ -359,7 +291,8 @@ if __name__ == '__main__':
                         #print("acceptOneOfMultiple", minIdentity, minQueryLength, minSubjectLength, allowPartialLength, vertex.name, targetVertex.name, edge.props['info'])
 
                         if vertex.name[1] == 'HPP12_1404':
-                            print(vertex)
+                            #print(vertex)
+                            pass
 
                         homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': stepID})
 
@@ -466,16 +399,16 @@ if __name__ == '__main__':
                 vertexIDObj = getIDObj(edge, vertex)
 
                 if targetVertexIDObj != None:
-                    tree.addi( vertexIDObj.start, vertexIDObj.end, targetVertex.name )
+                    tree.addi( vertexIDObj.begin, vertexIDObj.end, targetVertex.name )
 
-                    for i in range(vertexIDObj.start-1,vertexIDObj.end):
+                    for i in range(vertexIDObj.begin-1,vertexIDObj.end):
                         countArray[ i ] += 1
 
                     accumIdentity += len(targetVertexIDObj) * diamondResult.identity
 
                     if len(targetVertexIDObj) / len(targetSeq) >= 0.7: #todo find a good value!
                         continue
-                    elif len(targetVertexIDObj) / (len(targetSeq)-targetVertexIDObj.start+1) >= 0.95: #suffix
+                    elif len(targetVertexIDObj) / (len(targetSeq)-targetVertexIDObj.begin+1) >= 0.95: #suffix
                         continue
                     elif len(targetVertexIDObj) / (targetVertexIDObj.end) >= 0.95: #prefix
                         continue
@@ -519,7 +452,7 @@ if __name__ == '__main__':
 
                 otherNames.remove(vertex.name)
 
-                homolDB.addCombination(vertex.name, otherNames)
+                homolDB.addCombination(vertex.name, otherNames, {'step': '3'})
 
         for vertexID in setRemoveVertexIDs:
             graph.remove_vertex(vertexID)
@@ -539,7 +472,7 @@ if __name__ == '__main__':
         
         """
 
-        def greedyBuildFromSubset(mygraph, sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target))):
+        def greedyBuildFromSubset(mygraph, sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target)), minExplainedThreshold=0.8):
 
             sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']), reverse=True)
             setRemoveVertexIDs = set()
@@ -558,7 +491,7 @@ if __name__ == '__main__':
                 target2tree = defaultdict(IntervalTree)
                 target2vertex = dict()
 
-                if vertex.name[1] == 'HP_0424':
+                if vertex.name[1] == 'HP_0764':
                     vertex.name = vertex.name
 
                 if len(vertex.neighbors) < 2:
@@ -575,13 +508,13 @@ if __name__ == '__main__':
                     targetVertexIDObj = getIDObj(edge, targetVertex)
                     vertexIDObj = getIDObj(edge, vertex)
 
-                    if not vertexTree.overlaps(vertexIDObj.start, vertexIDObj.end) and not target2tree[targetVertex.name].overlaps(targetVertexIDObj.start, targetVertexIDObj.end):
+                    if not vertexTree.overlaps(vertexIDObj.begin, vertexIDObj.end) and not target2tree[targetVertex.name].overlaps(targetVertexIDObj.begin, targetVertexIDObj.end):
 
                         usedEdges.append(edge)
 
                         target2vertex[targetVertex.name] = targetVertex
-                        vertexTree.addi(vertexIDObj.start, vertexIDObj.end)
-                        target2tree[targetVertex.name].addi(targetVertexIDObj.start, targetVertexIDObj.end)
+                        vertexTree.addi(vertexIDObj.begin, vertexIDObj.end)
+                        target2tree[targetVertex.name].addi(targetVertexIDObj.begin, targetVertexIDObj.end)
 
 
                 if len(target2tree) == 0:
@@ -603,7 +536,7 @@ if __name__ == '__main__':
                 if acceptAll == False:
                     continue
 
-                if totalExplained/len(vertex.props['sequence']) < 0.8:
+                if totalExplained/len(vertex.props['sequence']) < minExplainedThreshold:
                     continue
 
                 for x in target2vertex:
@@ -615,7 +548,7 @@ if __name__ == '__main__':
                     setRemoveVertexIDs.add(targetVertex.name)
                     combination.add( targetVertex.name )
 
-                homolDB.addCombination(vertex.name, combination)
+                homolDB.addCombination(vertex.name, combination, {'step': '3.1'})
 
 
             for vertexID in setRemoveVertexIDs:
@@ -625,8 +558,9 @@ if __name__ == '__main__':
 
             return mygraph
 
-        graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity)
-        graph = greedyBuildFromSubset(graph, lambda x: len(getIDObj(x, x.target)))
+        graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.8)
+        graph = greedyBuildFromSubset(graph, lambda x: len(getIDObj(x, x.target)), 0.8)
+        graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.55)
 
         #print(len(graph.vertices))
 
@@ -642,8 +576,213 @@ if __name__ == '__main__':
         #print(len(graph.vertices))
 
         """
+
+        STEP 5: multiple sequences form a cluster
+
+        """
+
+
+        def checkIntervalOverlap(setOfOverlaps, baseInterval):
+
+            if setOfOverlaps == None:
+                return True
+
+            sourceOverlapOk = True
+            if not len(setOfOverlaps) == 0:
+                for x in setOfOverlaps:
+                    interSect = x.intersection(baseInterval)
+                    if interSect == None:
+                        continue
+
+                    if len(interSect) > 10:
+                        sourceOverlapOk = False
+                        break
+
+            return sourceOverlapOk
+
+
+        def getAllEdges(vertex, knownEdges=set(), seenVertices=set()):
+
+            if vertex == None:
+                return set()
+
+            if len(vertex.neighbors) == 0:
+                return set()
+
+            foundEdges = knownEdges
+
+            for edge in vertex.neighbors:
+                foundEdges.add(edge)
+
+            seenVertices.add(vertex)
+
+            for edge in vertex.neighbors:
+
+                if vertex == edge.source and edge.target not in seenVertices:
+                    seenVertices.add(edge.target)
+
+                    (newEdges, newVertices) = getAllEdges(edge.target, foundEdges, seenVertices)
+                    foundEdges = foundEdges.union(newEdges)
+                    seenVertices = seenVertices.union(newVertices)
+
+                elif edge.source not in seenVertices:
+
+                    seenVertices.add(edge.source)
+                    (newEdges, newVertices) = getAllEdges(edge.source, foundEdges, seenVertices)
+                    foundEdges = foundEdges.union(newEdges)
+                    seenVertices = seenVertices.union(newVertices)
+
+            return (foundEdges, seenVertices)
+
+        def removeDuplicateEdges( listOfEdges ):
+
+            listOfEdgesPlus = []
+
+            for elem in listOfEdges:
+                listOfEdgesPlus.append( (elem, elem.props['info']) )
+
+            seenResults = set()
+            finalEdges = []
+
+            for x in listOfEdgesPlus:
+                if x[1] not in seenResults:
+                    finalEdges.append(x[0])
+                    seenResults.add(x[1])
+
+            return finalEdges
+
+        def makeMultiCombinations(mygraph):
+
+            sortedVerts = sorted([x for x in mygraph.vertices],
+                                 key=lambda x: len(mygraph.get_vertex(x).props['sequence']), reverse=True)
+
+            handledVertices = set()
+
+            for x in sortedVerts:
+                vertex = mygraph.get_vertex(x)
+
+                if vertex.name in handledVertices:
+                    continue
+
+                vertexSeq = vertex.props['sequence']
+
+                sortingFunctionAssembly = lambda x: x.props['info'].identity
+
+                nextVertex = False
+
+                if vertex.name[1] in ['HP_0733', 'HP_0732', 'jhp_0670', 'jhp_0669']:
+                    vertex.name = vertex.name
+
+                for edge in sorted(vertex.neighbors, key=sortingFunctionAssembly, reverse=True):
+
+                    if nextVertex:
+                        break
+
+                    # is this a partial alignment?
+                    targetVertex = edge.getOpposite(vertex)
+                    targetVertexSeq = targetVertex.props['sequence']
+
+                    vertexAlign = getIDObj(edge, vertex)
+                    targetVertexAlign = getIDObj(edge, targetVertex)
+
+                    alignedPartVertex = len(vertexAlign) / len(vertexSeq)
+                    alignedPartTargetVertex = len(targetVertexAlign) / len(targetVertexSeq)
+
+                    bothPartiallyAligned = alignedPartVertex < 0.8 and alignedPartTargetVertex < 0.8
+
+                    if bothPartiallyAligned:
+
+                        allEdges = set()
+                        allVertices = set()
+
+                        # find zusammenhangskomponente
+                        (allEdges, allVertices) = getAllEdges(vertex, allEdges, allVertices)
+                        (allEdges2, allVertices2) = getAllEdges(targetVertex, allEdges, allVertices)
+
+                        allEdges = allEdges.union(allEdges2)
+                        allEdges = removeDuplicateEdges(allEdges)
+
+                        usedRelations = set()
+                        coveredRegions = defaultdict(IntervalTree)
+
+                        def testKeyFunc(x):
+                            return x.props['info'].identity
+
+                        for foundEdge in sorted(allEdges, key=testKeyFunc, reverse=True):
+
+                            feSource = foundEdge.source
+                            feTarget = foundEdge.target
+
+                            feSourceAlign = getIDObj(foundEdge, feSource)
+                            feTargetAlign = getIDObj(foundEdge, feTarget)
+
+                            # is there any overlap in source ?
+                            overlapsSource = coveredRegions[feSourceAlign.idtuple()][feSourceAlign]
+                            overlapsTarget = coveredRegions[feTargetAlign.idtuple()][feTargetAlign]
+
+                            overlapsSourceOK = checkIntervalOverlap(overlapsSource, feSourceAlign)
+                            overlapsTargetOK = checkIntervalOverlap(overlapsTarget, feTargetAlign)
+
+                            if not overlapsSourceOK or not overlapsTargetOK:
+                                continue  # cannot use this edge
+
+                            usedRelations.add(
+                                (
+                                    ModInterval(feSourceAlign.begin, feSourceAlign.end, feSourceAlign.idtuple()),
+                                    ModInterval(feTargetAlign.begin, feTargetAlign.end, feTargetAlign.idtuple())
+                                )
+                            )
+
+                            coveredRegions[feSourceAlign.idtuple()].add(feSourceAlign)
+                            coveredRegions[feTargetAlign.idtuple()].add(feTargetAlign)
+
+                            # merge any overlapping intervals
+                            coveredRegions[feSourceAlign.idtuple()].merge_overlaps(intcreator=ModInterval)
+                            coveredRegions[feTargetAlign.idtuple()].merge_overlaps(intcreator=ModInterval)
+
+                        # checked all edges, not check that all elements are explained to at least 80% or whatever value
+                        allWellExplained = True
+
+                        for seqid in coveredRegions:
+
+                            seqTree = coveredRegions[seqid]
+                            seqTree.merge_overlaps()
+
+                            seqTreeCovered = sum([len(x) for x in seqTree])
+
+                            sequence = genomeDB.get_sequence(seqid[0], seqid[1])
+
+                            explainedFraction = seqTreeCovered / len(sequence)
+
+                            if explainedFraction < 0.8:
+                                allWellExplained = False
+                                break
+
+                        if allWellExplained:
+
+                            newCombo = MultiCombination()
+
+                            for relation in usedRelations:
+
+                                handledVertices.add(relation[0].data)
+                                handledVertices.add(relation[1].data)
+
+                                newCombo.addMatch(relation[0], relation[1])
+
+                            homolDB.addMultiCombination(newCombo)
+
+                            nextVertex = True
+
+            mygraph = removeEmptyVertices(mygraph)
+
+            return mygraph
+
+
+        graph = makeMultiCombinations(graph)
+
+        """
         
-        STEP 5: remove hits which make no sense
+        STEP 6: remove hits which make no sense
         
         """
         sortedVerts = sorted([x for x in graph.vertices], key=lambda x: len(graph.get_vertex(x).props['sequence']),
@@ -665,7 +804,7 @@ if __name__ == '__main__':
                 vertexIDObj = getIDObj(edge, vertex)
 
                 if targetVertexIDObj != None:
-                    for i in range(vertexIDObj.start-1,vertexIDObj.end):
+                    for i in range(vertexIDObj.begin-1,vertexIDObj.end):
                         countArray[ i ] += 1
 
             coverage = 0
@@ -704,8 +843,10 @@ if __name__ == '__main__':
 
     print("HomolDB")
 
-    with open("/mnt/raidproj/proj/projekte/dataintegration/hpyloriDB/hpp12_hp", 'w') as outfile:
+    genomeDB.writeCSV("/home/users/joppich/ownCloud/data/hpyloriDB/genome_seqs/seqs")
 
+
+    with open("/mnt/raidproj/proj/projekte/dataintegration/hpyloriDB/hpp12_hp", 'w') as outfile:
         outfile.write(str(homolDB))
 
 

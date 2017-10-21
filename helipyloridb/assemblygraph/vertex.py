@@ -1,4 +1,4 @@
-from assemblygraph.edge import Edge
+from assemblygraph.edge import Edge, UndirectedEdge
 
 
 class Vertex:
@@ -7,9 +7,14 @@ class Vertex:
         self.props = properties
         self.neighbors = []
 
-    def add_neighbor(self, neighbor, props=None):
+    def add_neighbor(self, neighbor, props=None, undirected=False):
         if isinstance(neighbor, Vertex):
-            edge = Edge(props)
+
+            if undirected:
+                edge = UndirectedEdge(props)
+            else:
+                edge = Edge(props)
+
             edge.source = self
             edge.target = neighbor
             self.neighbors.append(edge)
