@@ -11,6 +11,7 @@ from assemblygraph.graph import Graph
 from assemblygraph.vertex import Vertex
 from database.DiamondResult import DiamondResult
 from database.ModInterval import ModInterval
+from database.ModIntervalTree import ModIntervalTree
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase, MultiCombination
 from utils import fileLocation
@@ -42,7 +43,7 @@ if __name__ == '__main__':
         return (4*iden + length) / 6.0
 
 
-    for file in glob.glob(fileLocation + "/alis/*.aliout"):
+    for file in glob.glob(fileLocation + "/genomes/alis/*.aliout"):
 
         query2result = defaultdict(list)
         subject2result = defaultdict(list)
@@ -61,8 +62,8 @@ if __name__ == '__main__':
         if not subjectGenome in wantedGenomes:
             continue
 
-        genomeDB.loadGenome(fileLocation + "/" + queryGenome + ".gb")
-        genomeDB.loadGenome(fileLocation + "/" + subjectGenome + ".gb")
+        genomeDB.loadGenome(fileLocation + "/genomes/" + queryGenome + ".gb")
+        genomeDB.loadGenome(fileLocation + "/genomes/" + subjectGenome + ".gb")
 
         with open(file, 'r') as infile:
 
@@ -703,7 +704,7 @@ if __name__ == '__main__':
                         allEdges = removeDuplicateEdges(allEdges)
 
                         usedRelations = set()
-                        coveredRegions = defaultdict(IntervalTree)
+                        coveredRegions = defaultdict(ModIntervalTree)
 
                         def testKeyFunc(x):
                             return x.props['info'].identity
@@ -737,8 +738,8 @@ if __name__ == '__main__':
                             coveredRegions[feTargetAlign.idtuple()].add(feTargetAlign)
 
                             # merge any overlapping intervals
-                            coveredRegions[feSourceAlign.idtuple()].merge_overlaps(intcreator=ModInterval)
-                            coveredRegions[feTargetAlign.idtuple()].merge_overlaps(intcreator=ModInterval)
+                            coveredRegions[feSourceAlign.idtuple()].merge_overlaps(newinttype=ModInterval)
+                            coveredRegions[feTargetAlign.idtuple()].merge_overlaps(newinttype=ModInterval)
 
                         # checked all edges, not check that all elements are explained to at least 80% or whatever value
                         allWellExplained = True
@@ -760,16 +761,44 @@ if __name__ == '__main__':
 
                         if allWellExplained:
 
-                            newCombo = MultiCombination()
+                            originalRelations = usedRelations
+                            usedRelations = list(usedRelations)
 
-                            for relation in usedRelations:
+                            while len(usedRelations) > 0:
 
-                                handledVertices.add(relation[0].data)
-                                handledVertices.add(relation[1].data)
+                                currentCombo = set()
+                                currentCombo.add(usedRelations[0])
 
-                                newCombo.addMatch(relation[0], relation[1])
+                                lastCurrentComboSize = len(currentCombo) - 1
 
-                            homolDB.addMultiCombination(newCombo)
+                                while lastCurrentComboSize != len(currentCombo):
+
+                                    lastCurrentComboSize = len(currentCombo)
+
+                                    usedVertices = set()
+                                    for rel in currentCombo:
+                                        usedVertices.add(rel[0].data)
+                                        usedVertices.add(rel[1].data)
+
+                                    for rel in usedRelations:
+                                        if rel[0].data in usedVertices:
+                                            currentCombo.add(rel)
+                                        if rel[1].data in usedVertices:
+                                            currentCombo.add(rel)
+
+                                for x in currentCombo:
+                                    usedRelations.remove(x)
+
+                                newCombo = MultiCombination()
+
+                                for relation in currentCombo:
+
+                                    handledVertices.add(relation[0].data)
+                                    handledVertices.add(relation[1].data)
+
+                                    newCombo.addMatch(relation[0], relation[1])
+
+                                homolDB.addMultiCombination(newCombo)
 
                             nextVertex = True
 
@@ -843,10 +872,9 @@ if __name__ == '__main__':
 
     print("HomolDB")
 
-    genomeDB.writeCSV("/home/users/joppich/ownCloud/data/hpyloriDB/genome_seqs/seqs")
+    genomeDB.writeCSV(fileLocation+"/genome_seqs/seqs")
 
-
-    with open("/mnt/raidproj/proj/projekte/dataintegration/hpyloriDB/hpp12_hp", 'w') as outfile:
+    with open(fileLocation+"/hpp12_hp", 'w') as outfile:
         outfile.write(str(homolDB))
 
 

@@ -1,7 +1,8 @@
 from collections import Counter, defaultdict
 from itertools import chain
 
-fileLocation = '/home/users/joppich/ownCloud/data/hpyloriDB/genomes/'
+fileLocation = '/home/users/joppich/ownCloud/data/hpyloriDB/'
+fileLocation = '/mnt/c/ownCloud/data/hpyloriDB/'
 
 def mergeCounter( counter1, counter2):
 
