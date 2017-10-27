@@ -25,6 +25,15 @@ class MultiCombination:
         match = MatchingRegion(elemInterval1, elemInterval2)
         self.elems.append(match)
 
+    def to_db_str(self, combID):
+
+        outstr=""
+        for match in self.elems:
+            outstr += "{id}\t{gen}\t{nam}\n".format(id=combID, gen=match.range1.data[0], nam=match.range1.data[1])
+            outstr += "{id}\t{gen}\t{nam}\n".format(id=combID, gen=match.range2.data[0], nam=match.range2.data[1])
+
+        return outstr
+
 
 class HomologyDatabase:
 
@@ -37,6 +46,31 @@ class HomologyDatabase:
         self.combinationProperties = defaultdict(lambda: dict())
 
         self.multiCombinations = []
+
+    def get_all_organisms(self):
+
+        orgs = set()
+
+        for x in self.homologies:
+            for y in self.homologies[x]:
+                orgs.add(y[0])
+
+        return orgs
+
+
+    def get_homology_cluster(self, homID):
+
+        clusterProt = self.homologies.get(homID)
+
+        if clusterProt == None:
+            return None
+
+        clusterDict =  {}
+
+        for elem in clusterProt:
+            clusterDict[elem[0]] = elem[1]
+
+        return clusterDict
 
     def findHomologyForID(self, searchID):
 
@@ -185,3 +219,61 @@ class HomologyDatabase:
                 homdb.homologies[aline[0]].add( (aline[1], aline[2]) )
 
         return homdb
+
+    def save_to_file(self, saveLocation):
+
+        with open(saveLocation, 'w') as outfile:
+
+            outStr = io.StringIO()
+
+            for homid in self.homologies:
+
+                allRels = self.homologies[homid]
+                allProps = self.homologyProperties[homid]
+
+                propsAssigned = None
+
+                for rel in allRels:
+
+                    if allProps != None and len(allProps) > 0:
+                        propKeys = [x for x in allProps]
+
+                        for propKey in propKeys:
+                            if rel in propKey:
+                                propsAssigned = allProps[propKey]
+                                break
+
+                    attribsPrint = [str(x) for x in rel]
+                    if propsAssigned != None:
+                        attribsPrint.append(str(propsAssigned))
+
+                    outStr.write(homid + "\t" + "\t".join(attribsPrint) + "\n")
+
+            outString = outStr.getvalue()
+
+            outfile.write(outString)
+
+            outStr.close()
+            outStr = io.StringIO()
+
+            cnt = 0
+            for x in self.combinations:
+
+                outStr.write("COMBID" + str(cnt) + "\t" + x[0] + "\t" + x[1] + "\n")
+                for partner in self.combinations[x]:
+                    outStr.write("COMBID" + str(cnt) + "\t" + partner[0] + "\t" + partner[1] + "\n")
+
+                cnt+= 1
+
+            outfile.write(outStr.getvalue())
+            outStr.close()
+
+            outStr = io.StringIO()
+            cnt = 0
+            for x in self.multiCombinations:
+                outStr.write(x.to_db_str("MULCOMB" + str(cnt)))
+                cnt+=1
+
+            outfile.write(outStr.getvalue())
+            outStr.close()
+

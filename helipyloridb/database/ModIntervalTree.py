@@ -2,13 +2,23 @@ from copy import copy
 
 from intervaltree import IntervalTree, Interval
 
+from database.ModInterval import ModInterval
+
 
 class ModIntervalTree(IntervalTree):
 
     def __init__(self, intervals=None):
         super(ModIntervalTree, self).__init__(intervals)
 
-    def merge_overlaps(self, data_reducer=None, data_initializer=None, newinttype=Interval):
+    def addi(self, begin, end, data=None):
+        """
+        Shortcut for add(Interval(begin, end, data)).
+
+        Completes in O(log n) time.
+        """
+        return self.add(ModInterval(begin, end, data))
+
+    def merge_overlaps(self, data_reducer=None, data_initializer=None, newinttype=ModInterval):
         """
         Finds all intervals with overlapping ranges and merges them
         into a single interval. If provided, uses data_reducer and

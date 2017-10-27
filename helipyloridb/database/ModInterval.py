@@ -22,6 +22,9 @@ class ModInterval(Interval):
 
     def intersection(self, other):
 
+        if other == None:
+            return None
+
         if not self.overlaps(other):
             return None
 

@@ -43,7 +43,7 @@ if __name__ == '__main__':
         return (4*iden + length) / 6.0
 
 
-    for file in glob.glob(fileLocation + "/genomes/alis/*.aliout"):
+    for file in glob.glob(fileLocation + "/alignments_blast2/*.aliout"):
 
         query2result = defaultdict(list)
         subject2result = defaultdict(list)
@@ -64,6 +64,8 @@ if __name__ == '__main__':
 
         genomeDB.loadGenome(fileLocation + "/genomes/" + queryGenome + ".gb")
         genomeDB.loadGenome(fileLocation + "/genomes/" + subjectGenome + ".gb")
+
+        print(file)
 
         with open(file, 'r') as infile:
 
@@ -176,8 +178,8 @@ if __name__ == '__main__':
             qseq = genomeDB.get_sequence(alignment.query.genome, alignment.query.seqid)
             sseq = genomeDB.get_sequence(alignment.subject.genome, alignment.subject.seqid)
 
-            lengthQuery =  (len(alignment) / len(qseq))
-            lengthSubject =(len(alignment) / len(sseq))
+            lengthQuery =  (len(alignment.query) / len(qseq))
+            lengthSubject =(len(alignment.subject) / len(sseq))
 
             if lengthQuery < 0.8:
                 return 0
@@ -193,23 +195,25 @@ if __name__ == '__main__':
 
             vertex = graph.vertices[vertexID]
 
+            if vertex.name[1] == 'HP_0694':
+                vertex.name = vertex.name
+
             if len(vertex.neighbors) == 1:
 
                 targetVertex = vertex.neighbors[0].target
 
                 # second condition is sanity check, should be always the case => unidirectional
                 if len(targetVertex.neighbors) == 1 and targetVertex.neighbors[0].target == vertex:
-                    setRemoveVertexIDs.add(vertex.name)
-                    setRemoveVertexIDs.add(targetVertex.name)
-
-
                     diamondResult = targetVertex.neighbors[0].props['info']
                     identityScore = makeIdentityScore(diamondResult) > 0.9
                     lengthScore = makeLengthScore(diamondResult) > 0.8
 
                     if identityScore and lengthScore:
+                        setRemoveVertexIDs.add(vertex.name)
+                        setRemoveVertexIDs.add(targetVertex.name)
+
                         #print("Step2", vertex.name, targetVertex.name, diamondResult)
-                        homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': "2"})
+                        homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': "2", 'file': file})
 
         for vertexID in setRemoveVertexIDs:
             graph.remove_vertex(vertexID)
@@ -247,9 +251,8 @@ if __name__ == '__main__':
             for x in sortedVerts:
                 vertex = mygraph.get_vertex(x)
 
-                if vertex.name[1] == 'SE87_00145':
-                    pass
-                    #print(vertex.name)
+                if vertex.name[1] == 'HP_0694':
+                    vertex.name=vertex.name
 
                 for edge in sorted(vertex.neighbors, key=lambda x: x.props['info'].identity, reverse=True):
 
@@ -291,11 +294,11 @@ if __name__ == '__main__':
                         setRemoveVertexIDs.add(targetVertex.name)
                         #print("acceptOneOfMultiple", minIdentity, minQueryLength, minSubjectLength, allowPartialLength, vertex.name, targetVertex.name, edge.props['info'])
 
-                        if vertex.name[1] == 'HPP12_1404':
-                            #print(vertex)
-                            pass
+                        if vertex.name[1] == 'HP_0694':
+                            vertex.name=vertex.name
 
-                        homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': stepID})
+
+                        homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': stepID, 'file': file})
 
                         if not allowMultiple:
                             break
@@ -383,7 +386,7 @@ if __name__ == '__main__':
             allTargetsLengthMatch = True
             accumIdentity = 0.0
 
-            if vertex.name[1] == 'HP_0424':
+            if vertex.name[1] == 'jhp_0073':
                 vertex.name = vertex.name
 
 
@@ -473,7 +476,7 @@ if __name__ == '__main__':
         
         """
 
-        def greedyBuildFromSubset(mygraph, sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target)), minExplainedThreshold=0.8):
+        def greedyBuildFromSubset(mygraph, sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target)), minExplainedThreshold=0.8, allowTargetOverlaps = False):
 
             sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']), reverse=True)
             setRemoveVertexIDs = set()
@@ -488,11 +491,14 @@ if __name__ == '__main__':
                 allTargetsLengthMatch = True
                 accumIdentity = 0.0
 
-                vertexTree = IntervalTree()
+                vertexTree = ModIntervalTree()
                 target2tree = defaultdict(IntervalTree)
                 target2vertex = dict()
 
-                if vertex.name[1] == 'HP_0764':
+                if vertex.name[1] == 'jhp_1409':
+                    vertex.name = vertex.name
+
+                if vertex.name[1] == 'HP_0091':
                     vertex.name = vertex.name
 
                 if len(vertex.neighbors) < 2:
@@ -509,7 +515,26 @@ if __name__ == '__main__':
                     targetVertexIDObj = getIDObj(edge, targetVertex)
                     vertexIDObj = getIDObj(edge, vertex)
 
-                    if not vertexTree.overlaps(vertexIDObj.begin, vertexIDObj.end) and not target2tree[targetVertex.name].overlaps(targetVertexIDObj.begin, targetVertexIDObj.end):
+
+                    part1Check = not vertexTree.overlaps(vertexIDObj.begin, vertexIDObj.end)
+                    part2Check = targetVertex.name not in target2tree or not target2tree[targetVertex.name].overlaps(targetVertexIDObj.begin, targetVertexIDObj.end)
+
+                    acceptEdge = part1Check and part2Check
+
+                    if allowTargetOverlaps and not part1Check:
+                        # mode which allows a small overlap < 15AA
+                        overlaps = [len(x.intersection(vertexIDObj)) for x in vertexTree[vertexIDObj]]
+
+                        if len(overlaps) == 0:
+                            overlaps.append(0)
+
+                        acceptOverlap = max(overlaps) < 30 and len(targetVertexIDObj) > 45
+                        acceptOverlapInOther = part2Check
+
+                        acceptEdge |= (acceptOverlap and acceptOverlapInOther)
+
+
+                    if acceptEdge:
 
                         usedEdges.append(edge)
 
@@ -521,13 +546,28 @@ if __name__ == '__main__':
                 if len(target2tree) == 0:
                     continue
 
+                if vertex.name[1] == 'HP_0091':
+                    vertex.name = vertex.name
+
+                vertexTree.merge_overlaps()
+                totalExplained = [len(x) for x in vertexTree.all_intervals]
+                explainedFraction = sum(totalExplained) / len(vertex.props['sequence'])
+
+
+                if explainedFraction < 0.9 or not allowTargetOverlaps:
+                    minUsedFraction = 0.8
+                else:
+                    minUsedFraction = 0.0
+
                 acceptAll = True
-                totalExplained = 0
                 for targetName in target2tree:
                     used = sum([x.length() for x in target2tree[targetName]])
-                    totalExplained += used
+                    usedTargetFraction = 0.0
 
-                    if used / len(target2vertex[targetName].props['sequence']) < 0.8:
+                    if used > 0:
+                        usedTargetFraction = used / len(target2vertex[targetName].props['sequence'])
+
+                    if used == 0 or usedTargetFraction < minUsedFraction:
                         acceptAll = False
                         break
 
@@ -537,7 +577,8 @@ if __name__ == '__main__':
                 if acceptAll == False:
                     continue
 
-                if totalExplained/len(vertex.props['sequence']) < minExplainedThreshold:
+
+                if explainedFraction < minExplainedThreshold:
                     continue
 
                 for x in target2vertex:
@@ -561,6 +602,8 @@ if __name__ == '__main__':
 
         graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.8)
         graph = greedyBuildFromSubset(graph, lambda x: len(getIDObj(x, x.target)), 0.8)
+
+        graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, minExplainedThreshold=0.5, allowTargetOverlaps=True)
         graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.55)
 
         #print(len(graph.vertices))
@@ -868,16 +911,6 @@ if __name__ == '__main__':
         printGraphEdges(graph)
 
     homolDB.finalize()
-    homolDB.printCombinations()
-
-    print("HomolDB")
 
     genomeDB.writeCSV(fileLocation+"/genome_seqs/seqs")
-
-    with open(fileLocation+"/hpp12_hp", 'w') as outfile:
-        outfile.write(str(homolDB))
-
-
-    exit(0)
-
-
+    homolDB.save_to_file(fileLocation + "/hpp12_hp")
