@@ -122,6 +122,12 @@ class HomologyDatabase:
 
     def finalize(self):
 
+        #fetch all combid's
+        for combElem in self.combinations:
+            others = self.combinations[combElem]
+            for otherElem in others:
+                self.addHomologyRelation(combElem, otherElem, {'step': 'finalize', 'relation': (combElem, tuple(others))},)
+
         changed = True
         while changed:
 
@@ -156,7 +162,7 @@ class HomologyDatabase:
         for x in listIDs:
             self.combinations[id1].add(x)
 
-        self.combinationProperties[id1] = mergeDicts(self.combinationProperties[id1], properties)
+        self.combinationProperties[id1] = mergeDicts(self.combinationProperties.get(id1, None), properties)
 
     def printCombinations(self):
 
@@ -259,9 +265,20 @@ class HomologyDatabase:
             cnt = 0
             for x in self.combinations:
 
-                outStr.write("COMBID" + str(cnt) + "\t" + x[0] + "\t" + x[1] + "\n")
-                for partner in self.combinations[x]:
-                    outStr.write("COMBID" + str(cnt) + "\t" + partner[0] + "\t" + partner[1] + "\n")
+                elemProps = None
+                if x in self.combinationProperties:
+                    elemProps = self.combinationProperties[x]
+
+                printPartners = [x] + list(self.combinations[x])
+
+                for partner in printPartners:
+
+                    descriptor = ["COMBID"+str(cnt), str(partner[0]), str(partner[1])]
+
+                    if elemProps != None:
+                        descriptor.append( str(elemProps) )
+
+                    outStr.write("\t".join(descriptor) + "\n")
 
                 cnt+= 1
 
@@ -271,7 +288,7 @@ class HomologyDatabase:
             outStr = io.StringIO()
             cnt = 0
             for x in self.multiCombinations:
-                outStr.write(x.to_db_str("MULCOMB" + str(cnt)))
+                outStr.write(x.to_db_str("MULCMB" + str(cnt)))
                 cnt+=1
 
             outfile.write(outStr.getvalue())

@@ -43,6 +43,32 @@ if __name__ == '__main__':
         return (4*iden + length) / 6.0
 
 
+    def getIDObj(edge, vertex):
+
+        diamondResult = edge.props['info']
+
+        if vertex.name == (diamondResult.query.genome, diamondResult.query.seqid):
+            return diamondResult.query
+
+        if vertex.name == (diamondResult.subject.genome, diamondResult.subject.seqid):
+            return diamondResult.subject
+
+        return None
+
+
+    def getNonIDObj(edge, vertex):
+
+        diamondResult = edge.props['info']
+
+        if vertex.name == (diamondResult.query.genome, diamondResult.query.seqid):
+            return diamondResult.subject
+
+        if vertex.name == (diamondResult.subject.genome, diamondResult.subject.seqid):
+            return diamondResult.query
+
+        return None
+
+
     for file in glob.glob(fileLocation + "/alignments_blast2/*.aliout"):
 
         query2result = defaultdict(list)
@@ -52,6 +78,8 @@ if __name__ == '__main__':
         afile = filebase.split('.')
         subjectGenome = afile[0]
         queryGenome = afile[1]
+
+        fileName = filebase
 
 
         wantedGenomes = ['AE000511', 'CP001217', 'AE001439']
@@ -105,12 +133,21 @@ if __name__ == '__main__':
             graph.add_vertex_if_not_exists(queryVert)
 
             for result in results:
+
+                if len(result) < 20:
+                    continue
+
                 subjVert = Vertex(result.subject.idtuple(), {'sequence': genomeDB.get_sequence(result.subject.genome, result.subject.seqid)})
                 subjVert = graph.add_vertex_if_not_exists(subjVert)
 
                 graph.add_edge(queryVert, subjVert, {'info': result}, True)
 
         #print(len(graph.vertices))
+
+        for vertexID in graph.vertices:
+            vertex = graph.vertices[vertexID]
+
+            vertex.neighbors = sorted(vertex.neighbors, key=lambda x: getNonIDObj(x, vertex).seqid)
 
         """
         
@@ -213,7 +250,9 @@ if __name__ == '__main__':
                         setRemoveVertexIDs.add(targetVertex.name)
 
                         #print("Step2", vertex.name, targetVertex.name, diamondResult)
-                        homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': "2", 'file': file})
+                        homolDB.addHomologyRelation(vertex.name, targetVertex.name,
+                                                    {'step': "2", 'file': fileName, 'edge': (vertex.name, targetVertex.name)}
+                                                    )
 
         for vertexID in setRemoveVertexIDs:
             graph.remove_vertex(vertexID)
@@ -229,20 +268,18 @@ if __name__ == '__main__':
         
         """
 
-        def getIDObj(edge, vertex):
-
-            diamondResult = edge.props['info']
-
-            if vertex.name == (diamondResult.query.genome, diamondResult.query.seqid):
-                return diamondResult.query
-
-            if vertex.name == (diamondResult.subject.genome, diamondResult.subject.seqid):
-                return diamondResult.subject
-
-            return None
 
 
-        def acceptOneOfMultiple(mygraph, minIdentity=0.8, minQueryLength=0.85, minSubjectLength=0.85, allowPartialLength=False, allowMultiple=False,betterEdgeCheck=False, stepID='1ofMany'):
+
+        def acceptOneOfMultiple(mygraph,
+                                minIdentity=0.8,
+                                minQueryLength=0.85,
+                                minSubjectLength=0.85,
+                                edgeSortExpression=lambda x: x.props['info'].identity,
+                                allowPartialLength=False,
+                                allowMultiple=False,
+                                betterEdgeCheck=False,
+                                stepID='1ofMany'):
 
             sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']),
                                  reverse=True)
@@ -251,10 +288,10 @@ if __name__ == '__main__':
             for x in sortedVerts:
                 vertex = mygraph.get_vertex(x)
 
-                if vertex.name[1] == 'HP_0694':
+                if vertex.name[1] == 'HPP12_1154':
                     vertex.name=vertex.name
 
-                for edge in sorted(vertex.neighbors, key=lambda x: x.props['info'].identity, reverse=True):
+                for edge in sorted(vertex.neighbors, key=edgeSortExpression, reverse=True):
 
                     targetVertex = edge.target
 
@@ -298,7 +335,9 @@ if __name__ == '__main__':
                             vertex.name=vertex.name
 
 
-                        homolDB.addHomologyRelation(vertex.name, targetVertex.name, {'step': stepID, 'file': file})
+                        homolDB.addHomologyRelation(vertex.name, targetVertex.name,
+                                                    {'step': stepID, 'file': fileName, 'edge': (vertex.name, targetVertex.name)}
+                                                    )
 
                         if not allowMultiple:
                             break
@@ -476,7 +515,11 @@ if __name__ == '__main__':
         
         """
 
-        def greedyBuildFromSubset(mygraph, sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target)), minExplainedThreshold=0.8, allowTargetOverlaps = False):
+        def greedyBuildFromSubset(mygraph,
+                                  sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target)),
+                                  minExplainedThreshold=0.8,
+                                  allowTargetOverlaps = False
+                                  ):
 
             sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']), reverse=True)
             setRemoveVertexIDs = set()
@@ -495,7 +538,7 @@ if __name__ == '__main__':
                 target2tree = defaultdict(IntervalTree)
                 target2vertex = dict()
 
-                if vertex.name[1] == 'jhp_1409':
+                if vertex.name[1] == 'jhp_0959':
                     vertex.name = vertex.name
 
                 if vertex.name[1] == 'HP_0091':
@@ -546,7 +589,7 @@ if __name__ == '__main__':
                 if len(target2tree) == 0:
                     continue
 
-                if vertex.name[1] == 'HP_0091':
+                if vertex.name[1] in ['jhp_0054', 'jhp_0959']:
                     vertex.name = vertex.name
 
                 vertexTree.merge_overlaps()
@@ -555,9 +598,9 @@ if __name__ == '__main__':
 
 
                 if explainedFraction < 0.9 or not allowTargetOverlaps:
-                    minUsedFraction = 0.8
+                    minUsedFraction = 0.9
                 else:
-                    minUsedFraction = 0.0
+                    minUsedFraction = 0.1
 
                 acceptAll = True
                 for targetName in target2tree:
@@ -603,19 +646,10 @@ if __name__ == '__main__':
         graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.8)
         graph = greedyBuildFromSubset(graph, lambda x: len(getIDObj(x, x.target)), 0.8)
 
-        graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, minExplainedThreshold=0.5, allowTargetOverlaps=True)
-        graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.55)
+        #graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, minExplainedThreshold=0.5, allowTargetOverlaps=True)
+        #graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.55)
 
         #print(len(graph.vertices))
-
-        """
-        
-        STEP 4: one sequence, one or multiple sequences align, accept also rather bad identity
-        
-        """
-
-        graph = acceptOneOfMultiple(graph, 0.4, 0.8, 0.8, allowPartialLength=True, betterEdgeCheck=True, allowMultiple=False, stepID='1OfManyBad')
-        graph.cleanUpEmpty()
 
         #print(len(graph.vertices))
 
@@ -645,7 +679,7 @@ if __name__ == '__main__':
             return sourceOverlapOk
 
 
-        def getAllEdges(vertex, knownEdges=set(), seenVertices=set()):
+        def getAllEdges(vertex, knownEdges=set(), seenVertices=set(), minOverlapLength=20):
 
             if vertex == None:
                 return set()
@@ -662,17 +696,20 @@ if __name__ == '__main__':
 
             for edge in vertex.neighbors:
 
+                if len(edge.props['info']) < minOverlapLength:
+                    continue
+
                 if vertex == edge.source and edge.target not in seenVertices:
                     seenVertices.add(edge.target)
 
-                    (newEdges, newVertices) = getAllEdges(edge.target, foundEdges, seenVertices)
+                    (newEdges, newVertices) = getAllEdges(edge.target, foundEdges, seenVertices, minOverlapLength)
                     foundEdges = foundEdges.union(newEdges)
                     seenVertices = seenVertices.union(newVertices)
 
                 elif edge.source not in seenVertices:
 
                     seenVertices.add(edge.source)
-                    (newEdges, newVertices) = getAllEdges(edge.source, foundEdges, seenVertices)
+                    (newEdges, newVertices) = getAllEdges(edge.source, foundEdges, seenVertices, minOverlapLength)
                     foundEdges = foundEdges.union(newEdges)
                     seenVertices = seenVertices.union(newVertices)
 
@@ -717,6 +754,14 @@ if __name__ == '__main__':
                 if vertex.name[1] in ['HP_0733', 'HP_0732', 'jhp_0670', 'jhp_0669']:
                     vertex.name = vertex.name
 
+                elif vertex.name[1] in ['jhp_0959', 'HPP12_1000', 'HPP12_1001', 'jhp_0958']:
+                    vertex.name = vertex.name
+
+                elif vertex.name[1] in ['jhp_0054']:
+                    vertex.name = vertex.name
+                else:
+                    continue
+
                 for edge in sorted(vertex.neighbors, key=sortingFunctionAssembly, reverse=True):
 
                     if nextVertex:
@@ -732,25 +777,28 @@ if __name__ == '__main__':
                     alignedPartVertex = len(vertexAlign) / len(vertexSeq)
                     alignedPartTargetVertex = len(targetVertexAlign) / len(targetVertexSeq)
 
-                    bothPartiallyAligned = alignedPartVertex < 0.8 and alignedPartTargetVertex < 0.8
+                    arePartiallyAligned = alignedPartVertex < 0.8 and alignedPartTargetVertex < 0.8 # was and - but that means that both must be partially aligned ...
 
-                    if bothPartiallyAligned:
+                    if arePartiallyAligned:
 
                         allEdges = set()
                         allVertices = set()
 
                         # find zusammenhangskomponente
-                        (allEdges, allVertices) = getAllEdges(vertex, allEdges, allVertices)
-                        (allEdges2, allVertices2) = getAllEdges(targetVertex, allEdges, allVertices)
+                        (allEdges, allVertices) = getAllEdges(vertex, allEdges, allVertices, minOverlapLength=20)
+                        (allEdges2, allVertices2) = getAllEdges(targetVertex, allEdges, allVertices, minOverlapLength=20)
 
                         allEdges = allEdges.union(allEdges2)
                         allEdges = removeDuplicateEdges(allEdges)
+
+                        # add current edge to structure first!
+                        # we must first try to complete this vertex, then we can continue with others ...
 
                         usedRelations = set()
                         coveredRegions = defaultdict(ModIntervalTree)
 
                         def testKeyFunc(x):
-                            return x.props['info'].identity
+                            return x.props['info'].identity * len(x.props['info'])
 
                         for foundEdge in sorted(allEdges, key=testKeyFunc, reverse=True):
 
@@ -851,6 +899,16 @@ if __name__ == '__main__':
 
 
         graph = makeMultiCombinations(graph)
+
+        """
+
+        STEP 4: one sequence, one or multiple sequences align, accept also rather bad identity
+
+        """
+
+        graph = acceptOneOfMultiple(graph, 0.4, 0.8, 0.8, allowPartialLength=True, betterEdgeCheck=True,
+                                    allowMultiple=False, stepID='1OfManyBad')
+        graph.cleanUpEmpty()
 
         """
         

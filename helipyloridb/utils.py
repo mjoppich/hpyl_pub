@@ -89,7 +89,9 @@ def mergeDicts( dict1, dict2, resultType=dict):
                 retSet.add(dict3[k])
 
                 if len(retSet) != 1:
-                    dict3[k] = retSet
+                    dict3[k] = tuple(retSet)
+                else:
+                    dict3[k] = tuple(retSet)[0]
         else:
 
             dict3[k] = v
