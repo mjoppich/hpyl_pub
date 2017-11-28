@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 from itertools import chain
+import copy
 
 fileLocation = '/home/users/joppich/ownCloud/data/hpyloriDB/'
 #fileLocation = '/mnt/c/ownCloud/data/hpyloriDB/'
@@ -97,3 +98,44 @@ def mergeDicts( dict1, dict2, resultType=dict):
             dict3[k] = v
 
     return dict3
+
+
+def dictionaryEquals(someDict, otherDict):
+
+    sdictKeys = set([x for x in someDict])
+    odictKeys = set([x for x in otherDict])
+
+    if not sdictKeys == odictKeys:
+        return False
+
+    for x in sdictKeys:
+        if not someDict[x] == otherDict[x]:
+            return False
+
+    return True
+
+def dictionaryHash(someDict):
+    """
+    Makes a hash from a dictionary, list, tuple or set to any level, that contains
+    only other hashable types (including any lists, tuples, sets, and
+    dictionaries).
+    """
+
+    hashVal = 0
+    for x in someDict:
+        hashVal += hash(x)
+
+        val = someDict[x]
+
+        if isinstance(val, (set, tuple, list)):
+
+            hashVal +=hash( tuple([x for x in val]) )
+
+        elif not isinstance(val, dict):
+
+            hashVal += hash(val)
+
+        else:
+            hashVal += dictionaryHash(val)
+
+    return hashVal

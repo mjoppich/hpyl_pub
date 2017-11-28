@@ -1,16 +1,23 @@
 import glob
+import operator
 import os
 import io
+
+import logging
 from Bio import SeqIO
 from collections import defaultdict, Counter
 
 from intervaltree import IntervalTree
 
-from assemblygraph.edge import Edge
+from assemblygraph.edge import Edge, UndirectedEdge
 from assemblygraph.graph import Graph
 from assemblygraph.vertex import Vertex
 from database.DiamondResult import DiamondResult
-from database.ModInterval import ModInterval
+from database.GeneDuplicationDB import GeneDuplicationDB
+
+from analysis.multicombinations import strMultiCombination
+
+
 from database.ModIntervalTree import ModIntervalTree
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase, MultiCombination
@@ -20,8 +27,17 @@ from utils import fileLocation
 
 if __name__ == '__main__':
 
+    FORMAT = '%(asctime)-15s %(user)-8s %(message)s'
+    logging.basicConfig(format=FORMAT)
+    d = {'user': 'mjoppich'}
+    logger = logging.getLogger('homologydb')
+
+    def log(message):
+        logger.warning(message, extra=d)
+
     genomeDB = GenomeDB(fileLocation)
     homolDB = HomologyDatabase()
+    geneDupDB = GeneDuplicationDB()
 
     def printResult(result):
         qseq = genomeDB.get_sequence(result.query.genome, result.query.seqid)
@@ -69,7 +85,7 @@ if __name__ == '__main__':
         return None
 
 
-    for file in glob.glob(fileLocation + "/alignments_blast2/*.aliout"):
+    for file in glob.glob(fileLocation + "/alignments/*.aliout"):
 
         query2result = defaultdict(list)
         subject2result = defaultdict(list)
@@ -90,8 +106,16 @@ if __name__ == '__main__':
         if not subjectGenome in wantedGenomes:
             continue
 
+        if queryGenome == subjectGenome:
+            continue
+
         genomeDB.loadGenome(fileLocation + "/genomes/" + queryGenome + ".gb")
         genomeDB.loadGenome(fileLocation + "/genomes/" + subjectGenome + ".gb")
+
+        geneDupDB.load_organism(fileLocation + "/alignments/" + queryGenome + "." + queryGenome + ".aliout", genomeDB)
+        geneDupDB.load_organism(fileLocation + "/alignments/" + subjectGenome + "." + subjectGenome + ".aliout", genomeDB)
+
+        print(str(geneDupDB))
 
         print(file)
 
@@ -103,6 +127,15 @@ if __name__ == '__main__':
 
                 if ret == None:
                     continue
+
+                if geneDupDB.has_gene_duplication(ret.query.genome, ret.query.seqid):
+                    commonIDs = geneDupDB.get_gene_duplication(ret.query.genome, ret.query.seqid)
+                    ret.query.seqid = commonIDs[0]
+
+                if geneDupDB.has_gene_duplication(ret.subject.genome, ret.subject.seqid):
+                    commonIDs = geneDupDB.get_gene_duplication(ret.subject.genome, ret.subject.seqid)
+                    ret.subject.seqid = commonIDs[0]
+
 
                 query2result[ret.query.seqid].append(ret)
                 subject2result[ret.subject.seqid].append(ret)
@@ -140,13 +173,14 @@ if __name__ == '__main__':
                 subjVert = Vertex(result.subject.idtuple(), {'sequence': genomeDB.get_sequence(result.subject.genome, result.subject.seqid)})
                 subjVert = graph.add_vertex_if_not_exists(subjVert)
 
-                graph.add_edge(queryVert, subjVert, {'info': result}, True)
+                myedge = graph.add_edge(queryVert, subjVert, {'info': result}, True)
+
+
 
         #print(len(graph.vertices))
 
         for vertexID in graph.vertices:
             vertex = graph.vertices[vertexID]
-
             vertex.neighbors = sorted(vertex.neighbors, key=lambda x: getNonIDObj(x, vertex).seqid)
 
         """
@@ -154,6 +188,8 @@ if __name__ == '__main__':
         STEP 1: REMOVE EMPTY NODES (IF EXIST)
         
         """
+
+        log("Starting Step 1")
 
         def removeEmptyVertices(mygraph):
             myRemoveVertexIDs = set()
@@ -267,7 +303,7 @@ if __name__ == '__main__':
         STEP 2.1: multiple hits, but one very high scoring 
         
         """
-
+        log("Starting Step 2.1")
 
 
 
@@ -342,13 +378,17 @@ if __name__ == '__main__':
                         if not allowMultiple:
                             break
 
+            log("Step 2.1: Removing Vertices")
             for vertexID in setRemoveVertexIDs:
                 mygraph.remove_vertex(vertexID)
+
+            log("Step 2.1: Removing Vertices Finished")
 
             return mygraph
 
 
         graph = acceptOneOfMultiple(graph, allowMultiple=True)
+        log("Step 2.1: Remove Empty Vertices")
         graph = removeEmptyVertices(graph)
 
 
@@ -359,6 +399,8 @@ if __name__ == '__main__':
         STEP 3: One sequence, multiple sequences map
         
         """
+
+        log("Starting Step 3")
 
         def printEdge(edge):
 
@@ -515,6 +557,8 @@ if __name__ == '__main__':
         
         """
 
+        log("Starting Step 3.1")
+
         def greedyBuildFromSubset(mygraph,
                                   sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target)),
                                   minExplainedThreshold=0.8,
@@ -637,7 +681,7 @@ if __name__ == '__main__':
 
 
             for vertexID in setRemoveVertexIDs:
-                mygraph.remove_vertex(vertexID)
+                mygraph.remove_vertices_by_id(vertexID)
 
             mygraph = removeEmptyVertices(mygraph)
 
@@ -660,60 +704,7 @@ if __name__ == '__main__':
         """
 
 
-        def checkIntervalOverlap(setOfOverlaps, baseInterval):
 
-            if setOfOverlaps == None:
-                return True
-
-            sourceOverlapOk = True
-            if not len(setOfOverlaps) == 0:
-                for x in setOfOverlaps:
-                    interSect = x.intersection(baseInterval)
-                    if interSect == None:
-                        continue
-
-                    if len(interSect) > 10:
-                        sourceOverlapOk = False
-                        break
-
-            return sourceOverlapOk
-
-
-        def getAllEdges(vertex, knownEdges=set(), seenVertices=set(), minOverlapLength=20):
-
-            if vertex == None:
-                return set()
-
-            if len(vertex.neighbors) == 0:
-                return set()
-
-            foundEdges = knownEdges
-
-            for edge in vertex.neighbors:
-                foundEdges.add(edge)
-
-            seenVertices.add(vertex)
-
-            for edge in vertex.neighbors:
-
-                if len(edge.props['info']) < minOverlapLength:
-                    continue
-
-                if vertex == edge.source and edge.target not in seenVertices:
-                    seenVertices.add(edge.target)
-
-                    (newEdges, newVertices) = getAllEdges(edge.target, foundEdges, seenVertices, minOverlapLength)
-                    foundEdges = foundEdges.union(newEdges)
-                    seenVertices = seenVertices.union(newVertices)
-
-                elif edge.source not in seenVertices:
-
-                    seenVertices.add(edge.source)
-                    (newEdges, newVertices) = getAllEdges(edge.source, foundEdges, seenVertices, minOverlapLength)
-                    foundEdges = foundEdges.union(newEdges)
-                    seenVertices = seenVertices.union(newVertices)
-
-            return (foundEdges, seenVertices)
 
         def removeDuplicateEdges( listOfEdges ):
 
@@ -732,6 +723,8 @@ if __name__ == '__main__':
 
             return finalEdges
 
+
+
         def makeMultiCombinations(mygraph):
 
             sortedVerts = sorted([x for x in mygraph.vertices],
@@ -747,7 +740,7 @@ if __name__ == '__main__':
 
                 vertexSeq = vertex.props['sequence']
 
-                sortingFunctionAssembly = lambda x: x.props['info'].identity
+                sortingFunctionVertexEdges = lambda x: x.props['info'].identity * len(x.props['info']) #longest matches
 
                 nextVertex = False
 
@@ -762,7 +755,7 @@ if __name__ == '__main__':
                 else:
                     continue
 
-                for edge in sorted(vertex.neighbors, key=sortingFunctionAssembly, reverse=True):
+                for edge in sorted(vertex.neighbors, key=sortingFunctionVertexEdges, reverse=True):
 
                     if nextVertex:
                         break
@@ -784,114 +777,17 @@ if __name__ == '__main__':
                         allEdges = set()
                         allVertices = set()
 
-                        # find zusammenhangskomponente
-                        (allEdges, allVertices) = getAllEdges(vertex, allEdges, allVertices, minOverlapLength=20)
-                        (allEdges2, allVertices2) = getAllEdges(targetVertex, allEdges, allVertices, minOverlapLength=20)
-
-                        allEdges = allEdges.union(allEdges2)
-                        allEdges = removeDuplicateEdges(allEdges)
-
-                        # add current edge to structure first!
-                        # we must first try to complete this vertex, then we can continue with others ...
-
-                        usedRelations = set()
-                        coveredRegions = defaultdict(ModIntervalTree)
-
-                        def testKeyFunc(x):
-                            return x.props['info'].identity * len(x.props['info'])
-
-                        for foundEdge in sorted(allEdges, key=testKeyFunc, reverse=True):
-
-                            feSource = foundEdge.source
-                            feTarget = foundEdge.target
-
-                            feSourceAlign = getIDObj(foundEdge, feSource)
-                            feTargetAlign = getIDObj(foundEdge, feTarget)
-
-                            # is there any overlap in source ?
-                            overlapsSource = coveredRegions[feSourceAlign.idtuple()][feSourceAlign]
-                            overlapsTarget = coveredRegions[feTargetAlign.idtuple()][feTargetAlign]
-
-                            overlapsSourceOK = checkIntervalOverlap(overlapsSource, feSourceAlign)
-                            overlapsTargetOK = checkIntervalOverlap(overlapsTarget, feTargetAlign)
-
-                            if not overlapsSourceOK or not overlapsTargetOK:
-                                continue  # cannot use this edge
-
-                            usedRelations.add(
-                                (
-                                    ModInterval(feSourceAlign.begin, feSourceAlign.end, feSourceAlign.idtuple()),
-                                    ModInterval(feTargetAlign.begin, feTargetAlign.end, feTargetAlign.idtuple())
-                                )
-                            )
-
-                            coveredRegions[feSourceAlign.idtuple()].add(feSourceAlign)
-                            coveredRegions[feTargetAlign.idtuple()].add(feTargetAlign)
-
-                            # merge any overlapping intervals
-                            coveredRegions[feSourceAlign.idtuple()].merge_overlaps(newinttype=ModInterval)
-                            coveredRegions[feTargetAlign.idtuple()].merge_overlaps(newinttype=ModInterval)
+                        combinationCreator = strMultiCombination(genomeDB)
+                        combinationCreator.build_combination(edge, graph)
 
                         # checked all edges, not check that all elements are explained to at least 80% or whatever value
-                        allWellExplained = True
+                        if not combinationCreator.well_explained():
+                            continue
 
-                        for seqid in coveredRegions:
+                        newCombo = combinationCreator.toMultiCombination()
+                        homolDB.addMultiCombination(newCombo)
 
-                            seqTree = coveredRegions[seqid]
-                            seqTree.merge_overlaps()
-
-                            seqTreeCovered = sum([len(x) for x in seqTree])
-
-                            sequence = genomeDB.get_sequence(seqid[0], seqid[1])
-
-                            explainedFraction = seqTreeCovered / len(sequence)
-
-                            if explainedFraction < 0.8:
-                                allWellExplained = False
-                                break
-
-                        if allWellExplained:
-
-                            originalRelations = usedRelations
-                            usedRelations = list(usedRelations)
-
-                            while len(usedRelations) > 0:
-
-                                currentCombo = set()
-                                currentCombo.add(usedRelations[0])
-
-                                lastCurrentComboSize = len(currentCombo) - 1
-
-                                while lastCurrentComboSize != len(currentCombo):
-
-                                    lastCurrentComboSize = len(currentCombo)
-
-                                    usedVertices = set()
-                                    for rel in currentCombo:
-                                        usedVertices.add(rel[0].data)
-                                        usedVertices.add(rel[1].data)
-
-                                    for rel in usedRelations:
-                                        if rel[0].data in usedVertices:
-                                            currentCombo.add(rel)
-                                        if rel[1].data in usedVertices:
-                                            currentCombo.add(rel)
-
-                                for x in currentCombo:
-                                    usedRelations.remove(x)
-
-                                newCombo = MultiCombination()
-
-                                for relation in currentCombo:
-
-                                    handledVertices.add(relation[0].data)
-                                    handledVertices.add(relation[1].data)
-
-                                    newCombo.addMatch(relation[0], relation[1])
-
-                                homolDB.addMultiCombination(newCombo)
-
-                            nextVertex = True
+                        nextVertex = True
 
             mygraph = removeEmptyVertices(mygraph)
 

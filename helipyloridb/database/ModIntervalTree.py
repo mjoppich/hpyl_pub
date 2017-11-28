@@ -18,6 +18,31 @@ class ModIntervalTree(IntervalTree):
         """
         return self.add(ModInterval(begin, end, data))
 
+    def chop(self, begin, end, datafunc=None, intervalType=ModInterval):
+        """
+        Like remove_envelop(), but trims back Intervals hanging into
+        the chopped area so that nothing overlaps.
+        """
+        insertions = set()
+        begin_hits = [iv for iv in self[begin] if iv.begin < begin]
+        end_hits = [iv for iv in self[end] if iv.end > end]
+
+        if datafunc:
+            for iv in begin_hits:
+                insertions.add(intervalType(iv.begin, begin, datafunc(iv, True)))
+            for iv in end_hits:
+                insertions.add(intervalType(end, iv.end, datafunc(iv, False)))
+        else:
+            for iv in begin_hits:
+                insertions.add(intervalType(iv.begin, begin, iv.data))
+            for iv in end_hits:
+                insertions.add(intervalType(end, iv.end, iv.data))
+
+        self.remove_envelop(begin, end)
+        self.difference_update(begin_hits)
+        self.difference_update(end_hits)
+        self.update(insertions)
+
     def merge_overlaps(self, data_reducer=None, data_initializer=None, newinttype=ModInterval):
         """
         Finds all intervals with overlapping ranges and merges them

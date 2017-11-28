@@ -12,8 +12,20 @@ class IDObj(ModInterval):
 
         return modInt
 
+    def __hash__(self):
+        return self.seqid.__hash__() + self.genome.__hash__() + super(IDObj, self).__hash__()
+
     def idtuple(self):
         return (self.genome, self.seqid)
+
+    def __eq__(self, other):
+
+        if other==None:
+            return False
+
+        intpart = super(IDObj, self).__eq__(other)
+
+        return self.seqid == other.seqid and self.genome == other.genome and intpart
 
     def __str__(self):
 
@@ -35,6 +47,33 @@ class DiamondResult:
         self.gap_opens = 0
         self.evalue = 1.0
         self.bit_score = 0
+
+    def __eq__(self, other):
+
+        if other == None:
+            return False
+
+        if self.query != other.query:
+            return False
+        if self.subject != other.subject:
+            return False
+        if self.identity != other.identity:
+            return False
+        if self.alignment_length != other.alignment_length:
+            return False
+        if self.mismatches != other.mismatches:
+            return False
+        if self.gap_opens != other.gap_opens:
+            return False
+        if self.evalue != other.evalue:
+            return False
+        if self.bit_score != other.bit_score:
+            return False
+
+        return True
+
+    def __hash__(self):
+        return self.query.__hash__() + self.subject.__hash__() + hash(self.identity) + hash(2*self.alignment_length) + hash(3*self.mismatches) + hash(4*self.gap_opens) + hash(5*self.evalue) + hash(6*self.bit_score)
 
     def __str__(self):
         allelems = [self.query.seqid, self.query.begin, self.query.end, self.subject.seqid, self.subject.begin, self.subject.end, self.identity, self.alignment_length, self.mismatches, self.gap_opens, self.evalue, self.bit_score]

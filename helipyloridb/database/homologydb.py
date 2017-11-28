@@ -29,8 +29,8 @@ class MultiCombination:
 
         outstr=""
         for match in self.elems:
-            outstr += "{id}\t{gen}\t{nam}\n".format(id=combID, gen=match.range1.data[0], nam=match.range1.data[1])
-            outstr += "{id}\t{gen}\t{nam}\n".format(id=combID, gen=match.range2.data[0], nam=match.range2.data[1])
+            outstr += "{id}\t{gen}\t{nam}\n".format(id=combID, gen=match.range1.genome, nam=match.range1.seqid)
+            outstr += "{id}\t{gen}\t{nam}\n".format(id=combID, gen=match.range2.genome, nam=match.range2.seqid)
 
         return outstr
 

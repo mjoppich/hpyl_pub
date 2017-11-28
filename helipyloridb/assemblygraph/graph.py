@@ -5,6 +5,9 @@ class Graph:
     def __init__(self):
         self.vertices = {}
 
+    def get_vertices(self):
+        return [x for x in self.vertices]
+
     def add_vertex(self, vertex, replace=False):
         if isinstance(vertex, Vertex):
 
@@ -31,10 +34,13 @@ class Graph:
 
     def contains_vertex(self, vertex_id):
 
+        if self.vertices.get(vertex_id, None) != None:
+            return True
+
         if isinstance(vertex_id, Vertex):
             return vertex_id.name in self.vertices
-        else:
-            return vertex_id in self.vertices
+        #else:
+        #    return vertex_id in self.vertices
 
     def get_vertex(self, vertex_id, default=None):
 
@@ -53,10 +59,51 @@ class Graph:
         if not self.contains_vertex(vertex_to):
             self.add_vertex(vertex_to)
 
-        vertex_from.add_neighbor(vertex_to, edge_props, undirected=undirected)
+        retEdge = vertex_from.add_neighbor(vertex_to, edge_props, undirected=undirected)
 
         if undirected:
-            vertex_to.add_neighbor(vertex_from, edge_props, undirected=undirected)
+            retOppEdge = retEdge.get_opposite_edge()
+            vertex_to.add_neighbor(retOppEdge)
+
+        return retEdge
+
+    def get_edges(self, decision_function=lambda edge: True):
+
+        allEdges = set()
+
+        for vertex in self.vertices:
+            vertexNode = self.vertices[vertex]
+
+            for edge in vertexNode.neighbors:
+
+                if decision_function(edge):
+                    allEdges.add(edge)
+
+        return allEdges
+
+    def remove_vertices_by_id(self, vertixIDs):
+
+        for vid in self.vertices:
+
+            if vid in vertixIDs:
+                continue
+
+            vertNode = self.vertices[vid]
+
+            if not vertNode.connectsTo( vertixIDs ):
+                continue
+
+            remEdgesIdx = set()
+            for edge in vertNode.neighbors:
+                if edge.target.name in vertixIDs:
+                    remEdgesIdx.add(edge)
+                elif edge.source.name in vertixIDs:
+                    remEdgesIdx.add(edge)
+
+            for x in remEdgesIdx:
+                idx = vertNode.neighbors.index(x)
+                del vertNode.neighbors[idx]
+
 
     def remove_vertex(self, vertex):
 
@@ -65,10 +112,19 @@ class Graph:
 
             for vid in self.vertices:
 
+                if vid == vertex:
+                    continue
+
                 vert = self.vertices[vid]
+
+                if not vert.connectsTo(vertexObj):
+                    continue
+
                 remEdgesIdx = set()
                 for edge in vert.neighbors:
-                    if edge.target == vertexObj or edge.source == vertexObj:
+                    if edge.target.name == vertexObj.name:
+                        remEdgesIdx.add(edge)
+                    elif edge.source.name == vertexObj.name:
                         remEdgesIdx.add(edge)
 
                 for x in remEdgesIdx:
