@@ -781,13 +781,18 @@ if __name__ == '__main__':
                         combinationCreator.build_combination(edge, graph)
 
                         # checked all edges, not check that all elements are explained to at least 80% or whatever value
-                        if not combinationCreator.well_explained():
+                        if not combinationCreator.valid_combination():
                             continue
 
                         newCombo = combinationCreator.toMultiCombination()
                         homolDB.addMultiCombination(newCombo)
 
+                        handledVertices.union( combinationCreator.used_vertices() )
+
                         nextVertex = True
+
+            for vertexID in handledVertices:
+                mygraph.remove_vertex(vertexID)
 
             mygraph = removeEmptyVertices(mygraph)
 

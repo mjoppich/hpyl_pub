@@ -3,7 +3,7 @@ from itertools import chain
 import copy
 
 fileLocation = '/home/users/joppich/ownCloud/data/hpyloriDB/'
-#fileLocation = '/mnt/c/ownCloud/data/hpyloriDB/'
+fileLocation = '/mnt/f/ownCloud/data/hpyloriDB/'
 
 def mergeCounter( counter1, counter2):
 

@@ -40,10 +40,12 @@ class strMultiCombination(GraphUser):
 
         self.ok_explained_fraction = 0.7
 
-        self.well_max_gap_fraction = 0.15
+        self.well_max_gap_fraction = 0.1
         self.well_explained_fraction = 0.8
         self.well_explained_max_gap = 200
         self.well_explained_covered_abs = 125
+
+        self.valid_combination_fraction = 0.6
 
     def checkIntervalOverlap(self, setOfOverlaps, baseInterval):
 
@@ -63,6 +65,17 @@ class strMultiCombination(GraphUser):
             retComb.addMatch( edgeInfo.query, edgeInfo.subject )
 
         return retComb
+
+    def used_vertices(self):
+
+        vertexIDs = set()
+
+        for edge in self.used_edges:
+            vertexIDs.add(edge.source.name)
+            vertexIDs.add(edge.target.name)
+
+        return vertexIDs
+
 
     def interval_overlap(self, setOfOverlaps, baseInterval):
 
@@ -191,12 +204,14 @@ class strMultiCombination(GraphUser):
 
             self.considered_edges.add(nextCandidateEdge)
 
-            if self.well_explained():
-                break
+            well_explained = self.well_explained()
 
             (nextCandidateEdge, explainedBases) = self.calculateNextCandidateEdge(graph, combinationGraph)
 
-            if explainedBases < 0:
+            if well_explained and explainedBases < 0:
+                break
+
+            if not well_explained and explainedBases < -5.0:
                 break
 
     def calculateNextCandidateEdge(self, originalGraph, combinationGraph):
@@ -258,9 +273,36 @@ class strMultiCombination(GraphUser):
         sortedEdges = sorted(considerableEdges.items(), key=operator.itemgetter(1), reverse=True)
 
         if len(sortedEdges) == 0:
-            return None
+            return (None, -1)
 
         return sortedEdges[0]
+
+    def valid_combination(self):
+
+        for seqid in self.covered_regions:
+
+            seqTree = self.covered_regions[seqid]
+            seqTree.merge_overlaps()
+
+            seqTreeCovered = sum([len(x) for x in seqTree])
+            sequence = self.genomeDB.get_sequence(seqid[0], seqid[1])
+
+            sequenceInterval = ModInterval(1, len(sequence))
+            sequenceTree = ModIntervalTree([sequenceInterval])
+
+            for x in seqTree:
+                sequenceTree.chop(x.begin, x.end)
+
+            uncoveredGapIntervals = sorted([x for x in sequenceTree.all_intervals], key=lambda x: x.begin)
+            uncoveredGaps = [len(x) for x in uncoveredGapIntervals]
+            maxGap = max(uncoveredGaps) if len(uncoveredGaps) > 0 else -1
+
+            explainedFraction = seqTreeCovered / len(sequence)
+
+            if explainedFraction < self.valid_combination_fraction:
+                return False
+
+        return True
 
     def well_explained(self):
         allWellExplained = True
