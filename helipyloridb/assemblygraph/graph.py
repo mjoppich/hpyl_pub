@@ -137,15 +137,6 @@ class Graph:
 
         raise ValueError("Vertex does not exist", vertex)
 
-    def cleanUpEmpty(self):
-        delIDs = []
-        for x in self.vertices:
-            if len(self.vertices[x].neighbors) == 0:
-                delIDs.append(x)
-
-        for x in delIDs:
-            del self.vertices[x]
-
     def _propsMatch(self, lprops, rprops):
 
         for x in lprops:
@@ -156,6 +147,18 @@ class Graph:
                 return False
 
         return True
+
+    def remove_empty_vertices(self):
+
+        removeVertexIDs = set()
+        for vertexID in self.vertices:
+
+            vertex = self.vertices[vertexID]
+
+            if len(vertex.neighbors) == 0:
+                removeVertexIDs.add(vertexID)
+
+        self.remove_vertices_by_id(removeVertexIDs)
 
 
     def remove_edge(self, vertex_from, vertex_to, edge_props, undirected=False):

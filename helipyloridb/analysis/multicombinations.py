@@ -2,41 +2,17 @@ import operator
 from collections import defaultdict
 from intervaltree import IntervalTree
 
+from analysis.graphuser import GraphUser
+from analysis.homologyresults import HomologyResult
 from assemblygraph.graph import Graph
 from database.ModInterval import ModInterval
 from database.ModIntervalTree import ModIntervalTree
 from database.homologydb import MultiCombination
 
 
-class GraphUser:
+class MultiCombinationCreatorConfig:
 
-    def getIDObj(self, edge, vertex):
-
-        diamondResult = edge.props['info']
-
-        if vertex.name == (diamondResult.query.genome, diamondResult.query.seqid):
-            return diamondResult.query
-
-        if vertex.name == (diamondResult.subject.genome, diamondResult.subject.seqid):
-            return diamondResult.subject
-
-        return None
-
-class strMultiCombination(GraphUser):
-
-    def __init__(self, genomeDB):
-
-        super(strMultiCombination, self).__init__()
-
-        self.genomeDB = genomeDB
-
-        self.possible_edges = None
-        self.considered_edges = None
-        self.used_relations = None
-        self.covered_regions = None
-        self.used_edges = None
-
-        self.reset()
+    def __init__(self):
 
         self.ok_explained_fraction = 0.7
 
@@ -46,6 +22,23 @@ class strMultiCombination(GraphUser):
         self.well_explained_covered_abs = 125
 
         self.valid_combination_fraction = 0.6
+
+
+class MultiCombinationCreator(GraphUser):
+
+    def __init__(self, graph, genomeDB, config):
+
+        super(MultiCombinationCreator, self).__init__(graph, genomeDB, 'MultiCombination')
+
+        self.possible_edges = None
+        self.considered_edges = None
+        self.used_relations = None
+        self.covered_regions = None
+        self.used_edges = None
+
+        self.config = config
+
+        self.reset()
 
     def checkIntervalOverlap(self, setOfOverlaps, baseInterval):
 
@@ -141,9 +134,82 @@ class strMultiCombination(GraphUser):
 
         self.covered_regions = defaultdict(ModIntervalTree)
 
+    def analyse(self):
+
+        returnResults = HomologyResult()
+
+        sortedVerts = sorted([x for x in self.graph.vertices],
+                             key=lambda x: len(self.graph.get_vertex(x).props['sequence']), reverse=True)
+
+        handledVertices = set()
+
+        for x in sortedVerts:
+            vertex = self.graph.get_vertex(x)
+
+            if vertex.name in handledVertices:
+                continue
+
+            vertexSeq = vertex.props['sequence']
+
+            sortingFunctionVertexEdges = lambda x: x.props['info'].identity * len(x.props['info'])  # longest matches
+
+            nextVertex = False
+
+            if vertex.name[1] in ['HP_0733', 'HP_0732', 'jhp_0670', 'jhp_0669']:
+                vertex.name = vertex.name
+
+            elif vertex.name[1] in ['jhp_0959', 'HPP12_1000', 'HPP12_1001', 'jhp_0958']:
+                vertex.name = vertex.name
+
+            elif vertex.name[1] in ['jhp_0054']:
+                vertex.name = vertex.name
+            else:
+                continue
+
+            for edge in sorted(vertex.neighbors, key=sortingFunctionVertexEdges, reverse=True):
+
+                if nextVertex:
+                    break
+
+                # is this a partial alignment?
+                targetVertex = edge.getOpposite(vertex)
+                targetVertexSeq = targetVertex.props['sequence']
+
+                vertexAlign = self.getIDObj(edge, vertex)
+                targetVertexAlign = self.getIDObj(edge, targetVertex)
+
+                alignedPartVertex = len(vertexAlign) / len(vertexSeq)
+                alignedPartTargetVertex = len(targetVertexAlign) / len(targetVertexSeq)
+
+                arePartiallyAligned = alignedPartVertex < 0.8 and alignedPartTargetVertex < 0.8  # was and - but that means that both must be partially aligned ...
+
+                if arePartiallyAligned:
+
+                    allEdges = set()
+                    allVertices = set()
+
+                    self.build_combination(edge)
+
+                    # checked all edges, not check that all elements are explained to at least 80% or whatever value
+                    if not self.valid_combination():
+                        continue
+
+                    newCombo = self.toMultiCombination()
+
+                    returnResults.mul_combination_results.append(newCombo)
+                    handledVertices.union(self.used_vertices())
+                    nextVertex = True
 
 
-    def build_combination(self, startEdge, graph):
+        if len(returnResults.mul_combination_results) > 0:
+
+            self.graph.remove_vertices_by_id(self.used_vertices())
+            self.graph.remove_empty_vertices()
+
+        return returnResults
+
+
+    def build_combination(self, startEdge):
         # add closest edges gradually ...
 
         self.reset()
@@ -206,7 +272,7 @@ class strMultiCombination(GraphUser):
 
             well_explained = self.well_explained()
 
-            (nextCandidateEdge, explainedBases) = self.calculateNextCandidateEdge(graph, combinationGraph)
+            (nextCandidateEdge, explainedBases) = self.calculateNextCandidateEdge(self.graph, combinationGraph)
 
             if well_explained and explainedBases < 0:
                 break

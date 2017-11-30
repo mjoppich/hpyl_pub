@@ -9,13 +9,19 @@ from collections import defaultdict, Counter
 
 from intervaltree import IntervalTree
 
+from analysis.graphIterateAnalysis import graphCleaner
+from analysis.greedymultihits import GreedyCombinationConfig, GreedyCombinationCreator
+from analysis.onehithomologs import oneHitHomologs
+from analysis.onehitmultimap import ManyToOneCombination
+from analysis.onemultiplehits import oneMultipleHomologs, oneMultipleConfig
+from analysis.removespurioushits import SpuriousEdgeRemover
 from assemblygraph.edge import Edge, UndirectedEdge
 from assemblygraph.graph import Graph
 from assemblygraph.vertex import Vertex
 from database.DiamondResult import DiamondResult
 from database.GeneDuplicationDB import GeneDuplicationDB
 
-from analysis.multicombinations import strMultiCombination
+from analysis.multicombinations import MultiCombinationCreator, MultiCombinationCreatorConfig
 
 
 from database.ModIntervalTree import ModIntervalTree
@@ -24,16 +30,9 @@ from database.homologydb import HomologyDatabase, MultiCombination
 from utils import fileLocation
 
 
-
 if __name__ == '__main__':
 
-    FORMAT = '%(asctime)-15s %(user)-8s %(message)s'
-    logging.basicConfig(format=FORMAT)
-    d = {'user': 'mjoppich'}
-    logger = logging.getLogger('homologydb')
 
-    def log(message):
-        logger.warning(message, extra=d)
 
     genomeDB = GenomeDB(fileLocation)
     homolDB = HomologyDatabase()
@@ -188,114 +187,18 @@ if __name__ == '__main__':
         STEP 1: REMOVE EMPTY NODES (IF EXIST)
         
         """
+        graphClean = graphCleaner(graph, None)
+        graphClean.analyse()
 
-        log("Starting Step 1")
-
-        def removeEmptyVertices(mygraph):
-            myRemoveVertexIDs = set()
-            for vertexID in mygraph.vertices:
-
-                vertex = mygraph.vertices[vertexID]
-
-                if len(vertex.neighbors) == 0:
-                    myRemoveVertexIDs.add(vertexID)
-
-            for vertexID in myRemoveVertexIDs:
-                #print("Remove: " + str(vertexID))
-                mygraph.remove_vertex(vertexID)
-
-            graph.cleanUpEmpty()
-
-            #print(len(mygraph.vertices))
-            return mygraph
-
-
-        def removeBadCoverageEdges(mygraph):
-            myRemoveVertexIDs = set()
-            for vertexID in mygraph.vertices:
-
-                vertex = mygraph.vertices[vertexID]
-
-                removeEdge = list()
-
-                for edge in vertex.neighbors:
-
-                    edgeInfo = edge.props['info']
-
-                    sourceSeq = edge.source.props['sequence']
-                    targetSeq = edge
-
-
-            for vertexID in myRemoveVertexIDs:
-                mygraph.remove_vertex(vertexID)
-
-            #print(len(mygraph.vertices))
-            return mygraph
-
-
-        graph = removeEmptyVertices(graph)
 
         """
         
         STEP 2: FIND EASY MATCHES
         
         """
-
-        setRemoveVertexIDs = set()
-
-        def makeIdentityScore( alignment ):
-            return alignment.identity
-
-        def makeLengthScore( alignment ):
-
-            qseq = genomeDB.get_sequence(alignment.query.genome, alignment.query.seqid)
-            sseq = genomeDB.get_sequence(alignment.subject.genome, alignment.subject.seqid)
-
-            lengthQuery =  (len(alignment.query) / len(qseq))
-            lengthSubject =(len(alignment.subject) / len(sseq))
-
-            if lengthQuery < 0.8:
-                return 0
-            if lengthSubject < 0.8:
-                return 0
-
-            return (lengthQuery+lengthSubject)/2.0
-
-
-
-        setOneVertices = set()
-        for vertexID in graph.vertices:
-
-            vertex = graph.vertices[vertexID]
-
-            if vertex.name[1] == 'HP_0694':
-                vertex.name = vertex.name
-
-            if len(vertex.neighbors) == 1:
-
-                targetVertex = vertex.neighbors[0].target
-
-                # second condition is sanity check, should be always the case => unidirectional
-                if len(targetVertex.neighbors) == 1 and targetVertex.neighbors[0].target == vertex:
-                    diamondResult = targetVertex.neighbors[0].props['info']
-                    identityScore = makeIdentityScore(diamondResult) > 0.9
-                    lengthScore = makeLengthScore(diamondResult) > 0.8
-
-                    if identityScore and lengthScore:
-                        setRemoveVertexIDs.add(vertex.name)
-                        setRemoveVertexIDs.add(targetVertex.name)
-
-                        #print("Step2", vertex.name, targetVertex.name, diamondResult)
-                        homolDB.addHomologyRelation(vertex.name, targetVertex.name,
-                                                    {'step': "2", 'file': fileName, 'edge': (vertex.name, targetVertex.name)}
-                                                    )
-
-        for vertexID in setRemoveVertexIDs:
-            graph.remove_vertex(vertexID)
-
-        graph = removeEmptyVertices(graph)
-
-        #print(len(graph.vertices))
+        stepOneHits = oneHitHomologs(graph, genomeDB)
+        homolResults = stepOneHits.analyse
+        homolResults.toDataBase(homolDB)
 
 
         """
@@ -303,96 +206,12 @@ if __name__ == '__main__':
         STEP 2.1: multiple hits, but one very high scoring 
         
         """
-        log("Starting Step 2.1")
 
+        one2mulHitsConfig = oneMultipleConfig()
 
-
-        def acceptOneOfMultiple(mygraph,
-                                minIdentity=0.8,
-                                minQueryLength=0.85,
-                                minSubjectLength=0.85,
-                                edgeSortExpression=lambda x: x.props['info'].identity,
-                                allowPartialLength=False,
-                                allowMultiple=False,
-                                betterEdgeCheck=False,
-                                stepID='1ofMany'):
-
-            sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']),
-                                 reverse=True)
-            setRemoveVertexIDs = set()
-
-            for x in sortedVerts:
-                vertex = mygraph.get_vertex(x)
-
-                if vertex.name[1] == 'HPP12_1154':
-                    vertex.name=vertex.name
-
-                for edge in sorted(vertex.neighbors, key=edgeSortExpression, reverse=True):
-
-                    targetVertex = edge.target
-
-                    vertexIDObj = getIDObj(edge, vertex)
-                    targetVertexIDObj = getIDObj(edge, targetVertex)
-
-                    queryLength = len(vertexIDObj) / len(vertex.props['sequence'])
-                    subjectLength = len(targetVertexIDObj) / len(targetVertex.props['sequence'])
-
-                    acceptEdge = False
-
-                    considerEdge = False
-                    if allowPartialLength:
-                        considerEdge = (queryLength > minQueryLength or subjectLength > minSubjectLength) and edge.props['info'].identity > minIdentity
-                        considerEdge = considerEdge and min([queryLength, subjectLength]) > 0.5
-                    else:
-                        considerEdge = queryLength > minQueryLength and subjectLength > minSubjectLength and edge.props['info'].identity > minIdentity
-
-                    if considerEdge:
-
-                        acceptEdge = True
-
-                        for targetEdge in targetVertex.neighbors:
-                            if targetEdge.props['info'].identity > edge.props['info'].identity:
-                                otherVertexObj = getIDObj(targetEdge, targetEdge.target)
-                                otherVertexLength = len(otherVertexObj) / len(targetEdge.target.props['sequence'])
-
-                                if subjectLength > 0.9 and otherVertexLength > 0.9:
-                                    continue
-
-                                if otherVertexLength > subjectLength:
-                                    acceptEdge = False
-                                    break
-
-                    if acceptEdge:
-                        setRemoveVertexIDs.add(vertex.name)
-                        setRemoveVertexIDs.add(targetVertex.name)
-                        #print("acceptOneOfMultiple", minIdentity, minQueryLength, minSubjectLength, allowPartialLength, vertex.name, targetVertex.name, edge.props['info'])
-
-                        if vertex.name[1] == 'HP_0694':
-                            vertex.name=vertex.name
-
-
-                        homolDB.addHomologyRelation(vertex.name, targetVertex.name,
-                                                    {'step': stepID, 'file': fileName, 'edge': (vertex.name, targetVertex.name)}
-                                                    )
-
-                        if not allowMultiple:
-                            break
-
-            log("Step 2.1: Removing Vertices")
-            for vertexID in setRemoveVertexIDs:
-                mygraph.remove_vertex(vertexID)
-
-            log("Step 2.1: Removing Vertices Finished")
-
-            return mygraph
-
-
-        graph = acceptOneOfMultiple(graph, allowMultiple=True)
-        log("Step 2.1: Remove Empty Vertices")
-        graph = removeEmptyVertices(graph)
-
-
-        #print(len(graph.vertices))
+        one2mulHits = oneMultipleHomologs(graph, genomeDB, one2mulHitsConfig)
+        homolResults = one2mulHits.analyse()
+        homolResults.toDataBase(homolDB)
 
         """
         
@@ -400,7 +219,6 @@ if __name__ == '__main__':
         
         """
 
-        log("Starting Step 3")
 
         def printEdge(edge):
 
@@ -453,242 +271,29 @@ if __name__ == '__main__':
                     #print(x.props['info'], seqname, add)
 
 
-        sortedVerts = sorted([x for x in graph.vertices], key=lambda x: len(graph.get_vertex(x).props['sequence']), reverse=True)
-        setRemoveVertexIDs = set()
-
-        for x in sortedVerts:
-            vertex = graph.get_vertex(x)
-            targetEdges = []
-
-            tree = IntervalTree()
-            baseSeq = vertex.props['sequence']
-            countArray = [0] * len(baseSeq)
-
-            allTargetsLengthMatch = True
-            accumIdentity = 0.0
-
-            if vertex.name[1] == 'jhp_0073':
-                vertex.name = vertex.name
-
-
-            if len(vertex.neighbors) < 2:
-                continue
-
-            for edge in sorted(vertex.neighbors, key=lambda x: x.props['info'].identity, reverse=True):
-
-                targetVertex = edge.target
-                targetSeq = targetVertex.props['sequence']
-
-                diamondResult = edge.props['info']
-                targetVertexIDObj = getIDObj(edge, targetVertex)
-                vertexIDObj = getIDObj(edge, vertex)
-
-                if targetVertexIDObj != None:
-                    tree.addi( vertexIDObj.begin, vertexIDObj.end, targetVertex.name )
-
-                    for i in range(vertexIDObj.begin-1,vertexIDObj.end):
-                        countArray[ i ] += 1
-
-                    accumIdentity += len(targetVertexIDObj) * diamondResult.identity
-
-                    if len(targetVertexIDObj) / len(targetSeq) >= 0.7: #todo find a good value!
-                        continue
-                    elif len(targetVertexIDObj) / (len(targetSeq)-targetVertexIDObj.begin+1) >= 0.95: #suffix
-                        continue
-                    elif len(targetVertexIDObj) / (targetVertexIDObj.end) >= 0.95: #prefix
-                        continue
-
-                    allTargetsLengthMatch = False
-
-                else:
-                    raise ValueError("Problem")
-
-            accumIdentity = accumIdentity / len(baseSeq)
-
-            noOverlap = True
-            ones = 0
-
-            for x in countArray:
-                if x > 1:
-                    noOverlap = False
-                    break
-                elif x == 1:
-                    ones += 1
-
-            if noOverlap == False:
-                continue
-
-            possibleMatch = (ones / len(countArray) ) > 0.9 or accumIdentity > 0.5
-
-            if vertex.name[1] == 'HP_0060':
-                print(vertex)
-
-
-            if possibleMatch and allTargetsLengthMatch:
-
-                #print(vertex.name, len(baseSeq), tree)
-                otherNames = set()
-                for edge in vertex.neighbors:
-                    otherNames.add(edge.source.name)
-                    otherNames.add(edge.target.name)
-
-                for x in otherNames:
-                    setRemoveVertexIDs.add(x)
-
-                otherNames.remove(vertex.name)
-
-                homolDB.addCombination(vertex.name, otherNames, {'step': '3'})
-
-        for vertexID in setRemoveVertexIDs:
-            graph.remove_vertex(vertexID)
-
-        graph = removeEmptyVertices(graph)
-
-        #print(len(graph.vertices))
+        many2one = ManyToOneCombination(graph, genomeDB)
+        retRes = many2one.analyse()
+        retRes.toDataBase(homolDB)
 
 
         """
         
         STEP 3.1: try to use a subset to get good coverage!
-        
-        SE87_04025	3	221	U063_1094	205	422	0.8540000000000001	219	31	1	7.7e-107	380.2 ('CP006888', 'U063_1094')
-        SE87_04025	148	283	U063_1094	128	258	0.624	141	38	4	3.1e-39	155.6 ('CP006888', 'U063_1094') 
-        SE87_04025	231	422	U063_1094	3	188	0.41100000000000003	197	100	6	1.3e-32	133.7 ('CP006888', 'U063_1094') 
-        
+                
         """
 
-        log("Starting Step 3.1")
+        greedyConfig = GreedyCombinationConfig()
+        greedyConfig.sortingFunctionAssembly = lambda x: x.props['info'].identity
 
-        def greedyBuildFromSubset(mygraph,
-                                  sortingFunctionAssembly=lambda x: len(getIDObj(x, x.target)),
-                                  minExplainedThreshold=0.8,
-                                  allowTargetOverlaps = False
-                                  ):
-
-            sortedVerts = sorted([x for x in mygraph.vertices], key=lambda x: len(mygraph.get_vertex(x).props['sequence']), reverse=True)
-            setRemoveVertexIDs = set()
-
-            for x in sortedVerts:
-                vertex = mygraph.get_vertex(x)
-                targetEdges = []
-
-                baseSeq = vertex.props['sequence']
-                countArray = [0] * len(baseSeq)
-
-                allTargetsLengthMatch = True
-                accumIdentity = 0.0
-
-                vertexTree = ModIntervalTree()
-                target2tree = defaultdict(IntervalTree)
-                target2vertex = dict()
-
-                if vertex.name[1] == 'jhp_0959':
-                    vertex.name = vertex.name
-
-                if vertex.name[1] == 'HP_0091':
-                    vertex.name = vertex.name
-
-                if len(vertex.neighbors) < 2:
-                    continue
-
-                usedEdges = []
-
-                for edge in sorted(vertex.neighbors, key=sortingFunctionAssembly, reverse=True):
-
-                    targetVertex = edge.target
-                    targetSeq = targetVertex.props['sequence']
-
-                    diamondResult = edge.props['info']
-                    targetVertexIDObj = getIDObj(edge, targetVertex)
-                    vertexIDObj = getIDObj(edge, vertex)
+        greedyCreator = GreedyCombinationCreator(graph, genomeDB, greedyConfig)
+        retRes = greedyCreator.analyse()
+        retRes.toDataBase(homolDB)
 
 
-                    part1Check = not vertexTree.overlaps(vertexIDObj.begin, vertexIDObj.end)
-                    part2Check = targetVertex.name not in target2tree or not target2tree[targetVertex.name].overlaps(targetVertexIDObj.begin, targetVertexIDObj.end)
-
-                    acceptEdge = part1Check and part2Check
-
-                    if allowTargetOverlaps and not part1Check:
-                        # mode which allows a small overlap < 15AA
-                        overlaps = [len(x.intersection(vertexIDObj)) for x in vertexTree[vertexIDObj]]
-
-                        if len(overlaps) == 0:
-                            overlaps.append(0)
-
-                        acceptOverlap = max(overlaps) < 30 and len(targetVertexIDObj) > 45
-                        acceptOverlapInOther = part2Check
-
-                        acceptEdge |= (acceptOverlap and acceptOverlapInOther)
-
-
-                    if acceptEdge:
-
-                        usedEdges.append(edge)
-
-                        target2vertex[targetVertex.name] = targetVertex
-                        vertexTree.addi(vertexIDObj.begin, vertexIDObj.end)
-                        target2tree[targetVertex.name].addi(targetVertexIDObj.begin, targetVertexIDObj.end)
-
-
-                if len(target2tree) == 0:
-                    continue
-
-                if vertex.name[1] in ['jhp_0054', 'jhp_0959']:
-                    vertex.name = vertex.name
-
-                vertexTree.merge_overlaps()
-                totalExplained = [len(x) for x in vertexTree.all_intervals]
-                explainedFraction = sum(totalExplained) / len(vertex.props['sequence'])
-
-
-                if explainedFraction < 0.9 or not allowTargetOverlaps:
-                    minUsedFraction = 0.9
-                else:
-                    minUsedFraction = 0.1
-
-                acceptAll = True
-                for targetName in target2tree:
-                    used = sum([x.length() for x in target2tree[targetName]])
-                    usedTargetFraction = 0.0
-
-                    if used > 0:
-                        usedTargetFraction = used / len(target2vertex[targetName].props['sequence'])
-
-                    if used == 0 or usedTargetFraction < minUsedFraction:
-                        acceptAll = False
-                        break
-
-                if len(target2tree) < 2:
-                    continue
-
-                if acceptAll == False:
-                    continue
-
-
-                if explainedFraction < minExplainedThreshold:
-                    continue
-
-                for x in target2vertex:
-                    setRemoveVertexIDs.add(target2vertex[x].name)
-
-                combination = set()
-                for edge in usedEdges:
-                    targetVertex = edge.target
-                    setRemoveVertexIDs.add(targetVertex.name)
-                    combination.add( targetVertex.name )
-
-                homolDB.addCombination(vertex.name, combination, {'step': '3.1'})
-
-
-            for vertexID in setRemoveVertexIDs:
-                mygraph.remove_vertices_by_id(vertexID)
-
-            mygraph = removeEmptyVertices(mygraph)
-
-            return mygraph
-
-        graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.8)
-        graph = greedyBuildFromSubset(graph, lambda x: len(getIDObj(x, x.target)), 0.8)
+        greedyConfig = GreedyCombinationConfig()
+        greedyCreator = GreedyCombinationCreator(graph, genomeDB, greedyConfig)
+        retRes = greedyCreator.analyse()
+        retRes.toDataBase(homolDB)
 
         #graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, minExplainedThreshold=0.5, allowTargetOverlaps=True)
         #graph = greedyBuildFromSubset(graph, lambda x: x.props['info'].identity, 0.55)
@@ -703,103 +308,11 @@ if __name__ == '__main__':
 
         """
 
+        mulCombAnalysisConfig = MultiCombinationCreatorConfig()
+        mulCombAnalysis = MultiCombinationCreator(graph, genomeDB, mulCombAnalysisConfig)
+        mulCombResult = mulCombAnalysis.analyse()
+        mulCombResult.toDataBase(homolDB)
 
-
-
-        def removeDuplicateEdges( listOfEdges ):
-
-            listOfEdgesPlus = []
-
-            for elem in listOfEdges:
-                listOfEdgesPlus.append( (elem, elem.props['info']) )
-
-            seenResults = set()
-            finalEdges = []
-
-            for x in listOfEdgesPlus:
-                if x[1] not in seenResults:
-                    finalEdges.append(x[0])
-                    seenResults.add(x[1])
-
-            return finalEdges
-
-
-
-        def makeMultiCombinations(mygraph):
-
-            sortedVerts = sorted([x for x in mygraph.vertices],
-                                 key=lambda x: len(mygraph.get_vertex(x).props['sequence']), reverse=True)
-
-            handledVertices = set()
-
-            for x in sortedVerts:
-                vertex = mygraph.get_vertex(x)
-
-                if vertex.name in handledVertices:
-                    continue
-
-                vertexSeq = vertex.props['sequence']
-
-                sortingFunctionVertexEdges = lambda x: x.props['info'].identity * len(x.props['info']) #longest matches
-
-                nextVertex = False
-
-                if vertex.name[1] in ['HP_0733', 'HP_0732', 'jhp_0670', 'jhp_0669']:
-                    vertex.name = vertex.name
-
-                elif vertex.name[1] in ['jhp_0959', 'HPP12_1000', 'HPP12_1001', 'jhp_0958']:
-                    vertex.name = vertex.name
-
-                elif vertex.name[1] in ['jhp_0054']:
-                    vertex.name = vertex.name
-                else:
-                    continue
-
-                for edge in sorted(vertex.neighbors, key=sortingFunctionVertexEdges, reverse=True):
-
-                    if nextVertex:
-                        break
-
-                    # is this a partial alignment?
-                    targetVertex = edge.getOpposite(vertex)
-                    targetVertexSeq = targetVertex.props['sequence']
-
-                    vertexAlign = getIDObj(edge, vertex)
-                    targetVertexAlign = getIDObj(edge, targetVertex)
-
-                    alignedPartVertex = len(vertexAlign) / len(vertexSeq)
-                    alignedPartTargetVertex = len(targetVertexAlign) / len(targetVertexSeq)
-
-                    arePartiallyAligned = alignedPartVertex < 0.8 and alignedPartTargetVertex < 0.8 # was and - but that means that both must be partially aligned ...
-
-                    if arePartiallyAligned:
-
-                        allEdges = set()
-                        allVertices = set()
-
-                        combinationCreator = strMultiCombination(genomeDB)
-                        combinationCreator.build_combination(edge, graph)
-
-                        # checked all edges, not check that all elements are explained to at least 80% or whatever value
-                        if not combinationCreator.valid_combination():
-                            continue
-
-                        newCombo = combinationCreator.toMultiCombination()
-                        homolDB.addMultiCombination(newCombo)
-
-                        handledVertices.union( combinationCreator.used_vertices() )
-
-                        nextVertex = True
-
-            for vertexID in handledVertices:
-                mygraph.remove_vertex(vertexID)
-
-            mygraph = removeEmptyVertices(mygraph)
-
-            return mygraph
-
-
-        graph = makeMultiCombinations(graph)
 
         """
 
@@ -807,64 +320,27 @@ if __name__ == '__main__':
 
         """
 
-        graph = acceptOneOfMultiple(graph, 0.4, 0.8, 0.8, allowPartialLength=True, betterEdgeCheck=True,
-                                    allowMultiple=False, stepID='1OfManyBad')
-        graph.cleanUpEmpty()
+        omConfig = oneMultipleConfig()
+        omConfig.allowPartialLength = True
+        omConfig.betterEdgeCheck = True
+        omConfig.allowMultiple = False
+        omConfig.minIdentity = 0.4
+        omConfig.minQueryLength = 0.8
+        omConfig.minSubjectLength = 0.8
+
+        omAnalysis = oneMultipleHomologs(graph, genomeDB, omConfig)
+        retRes = omAnalysis.analyse()
+
+        retRes.toDataBase(homolDB)
 
         """
         
         STEP 6: remove hits which make no sense
         
         """
-        sortedVerts = sorted([x for x in graph.vertices], key=lambda x: len(graph.get_vertex(x).props['sequence']),
-                             reverse=True)
-        setRemoveVertexIDs = set()
-        for x in sortedVerts:
-            vertex = graph.get_vertex(x)
-            targetEdges = []
-            baseSeq = vertex.props['sequence']
-            countArray = [0] * len(baseSeq)
 
-            for edge in sorted(vertex.neighbors, key=lambda x: x.props['info'].identity, reverse=True):
-
-                targetVertex = edge.target
-                targetSeq = targetVertex.props['sequence']
-
-                diamondResult = edge.props['info']
-                targetVertexIDObj = getIDObj(edge, targetVertex)
-                vertexIDObj = getIDObj(edge, vertex)
-
-                if targetVertexIDObj != None:
-                    for i in range(vertexIDObj.begin-1,vertexIDObj.end):
-                        countArray[ i ] += 1
-
-            coverage = 0
-            for x in countArray:
-                if x > 0:
-                    coverage += 1.0
-
-            if vertex.name[1] == 'SE87_05730':
-                pass
-                #print(vertex)
-
-            if coverage < len(baseSeq)/2:
-                #not enough coverage!
-                setRemoveVertexIDs.add(vertex.name)
-                continue
-
-            removeEdges = []
-            for edge in vertex.neighbors:
-                if edge.props['info'].identity < 0.4:
-                    removeEdges.append(edge)
-
-            for edge in removeEdges:
-                idx = vertex.neighbors.index(edge)
-
-                if idx != None and idx >= 0:
-                    del vertex.neighbors[idx]
-
-        for vertexID in setRemoveVertexIDs:
-            graph.remove_vertex(vertexID)
+        edgeRemover = SpuriousEdgeRemover(graph, genomeDB)
+        edgeRemover.analyse()
 
 
         printGraphEdges(graph)
