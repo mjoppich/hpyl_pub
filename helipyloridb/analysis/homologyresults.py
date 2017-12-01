@@ -9,6 +9,10 @@ class HomologyResult:
         self.combination_results = []
         self.mul_combination_results = []
 
+    def __len__(self):
+
+        return len(self.homology_relations) + len(self.combination_results) + len(self.mul_combination_results)
+
     def toDataBase(self, homolDB):
 
         if self.homology_relations != None:

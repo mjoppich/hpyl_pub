@@ -148,6 +148,19 @@ class Graph:
 
         return True
 
+    def vertex_count(self):
+
+        return len(self.vertices)
+
+    def edge_count(self):
+
+        cnt = 0
+        for vertexID in self.vertices:
+
+            cnt += len(self.vertices[vertexID].neighbors)
+
+        return cnt
+
     def remove_empty_vertices(self):
 
         removeVertexIDs = set()

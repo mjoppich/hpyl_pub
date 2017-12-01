@@ -36,7 +36,14 @@ class GraphUser(ABC):
     def analyse(self):
         self.log_info("Starting Analysis")
         res = self._analyse()
-        self.log_info("Analysis Finished")
+
+        if res != None:
+            self.log_info("Analysis Finished with " + str(len(res)) + " results")
+        else:
+            self.log_info("Analysis Finished with empty results")
+
+        if self.graph != None:
+            self.log_info("Remaining graph: nodes {nodes} and edges {edges}".format(nodes=str(self.graph.vertex_count()), edges=str(self.graph.edge_count())))
 
         return res
 
