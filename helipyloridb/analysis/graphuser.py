@@ -23,6 +23,7 @@ class GraphUser(ABC):
         logging.basicConfig(format=FORMAT)
 
         self.logger = logging.getLogger( self.stepID )
+        self.logger.setLevel(logging.INFO)
 
 
     def log_warn(self, message):
@@ -32,8 +33,15 @@ class GraphUser(ABC):
         self.logger.info(message)
 
 
-    @abstractmethod
     def analyse(self):
+        self.log_info("Starting Analysis")
+        res = self._analyse()
+        self.log_info("Analysis Finished")
+
+        return res
+
+    @abstractmethod
+    def _analyse(self):
         """
 
         :return: returns objects for homology database

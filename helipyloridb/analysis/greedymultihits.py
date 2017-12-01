@@ -9,7 +9,7 @@ class GreedyCombinationConfig:
 
     def __init__(self):
 
-        self.minExplainedThreshold = 0.8,
+        self.minExplainedThreshold = 0.8
         self.allowTargetOverlaps = False
 
         self.sortingFunctionAssembly = None
@@ -28,7 +28,7 @@ class GreedyCombinationCreator(GraphUser):
         self.found_homologies = list()
 
 
-    def analyse(self):
+    def _analyse(self):
 
         returnResults = HomologyResult()
 

@@ -42,7 +42,7 @@ class oneMultipleHomologs(GraphUser):
 
         return (lengthQuery+lengthSubject)/2.0
 
-    def analyse(self):
+    def _analyse(self):
 
         returnResult = HomologyResult()
 
@@ -53,12 +53,18 @@ class oneMultipleHomologs(GraphUser):
         for x in sortedVerts:
             vertex = self.graph.get_vertex(x)
 
+            if vertex.name in setRemoveVertexIDs:
+                continue # already assigned
+
             if vertex.name[1] == 'HPP12_1154':
                 vertex.name = vertex.name
 
             for edge in sorted(vertex.neighbors, key=self.config.edgeSortExpression, reverse=True):
 
                 targetVertex = edge.target
+
+                if targetVertex.name in setRemoveVertexIDs:
+                    continue # already assigned
 
                 vertexIDObj = self.getIDObj(edge, vertex)
                 targetVertexIDObj = self.getIDObj(edge, targetVertex)
@@ -114,10 +120,7 @@ class oneMultipleHomologs(GraphUser):
                     if not self.config.allowMultiple:
                         break
 
-        self.log_warn("Step 2.1: Removing Vertices")
         self.graph.remove_vertices_by_id(setRemoveVertexIDs)
         self.graph.remove_empty_vertices()
-
-        self.log_warn("Step 2.1: Removing Vertices Finished")
 
         return returnResult

@@ -23,5 +23,5 @@ class HomologyResult:
 
         if self.mul_combination_results != None:
 
-            for mul_comb_result in self.combination_results:
+            for mul_comb_result in self.mul_combination_results:
                 homolDB.addMultiCombination(mul_comb_result)

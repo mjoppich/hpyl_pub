@@ -134,7 +134,7 @@ class MultiCombinationCreator(GraphUser):
 
         self.covered_regions = defaultdict(ModIntervalTree)
 
-    def analyse(self):
+    def _analyse(self):
 
         returnResults = HomologyResult()
 
@@ -365,7 +365,7 @@ class MultiCombinationCreator(GraphUser):
 
             explainedFraction = seqTreeCovered / len(sequence)
 
-            if explainedFraction < self.valid_combination_fraction:
+            if explainedFraction < self.config.valid_combination_fraction:
                 return False
 
         return True
@@ -393,24 +393,24 @@ class MultiCombinationCreator(GraphUser):
 
             explainedFraction = seqTreeCovered / len(sequence)
 
-            if explainedFraction > self.well_explained_fraction:
+            if explainedFraction > self.config.well_explained_fraction:
                 continue
 
-            if self.ok_explained_fraction < explainedFraction and explainedFraction < self.well_explained_fraction:
+            if self.config.ok_explained_fraction < explainedFraction and explainedFraction < self.config.well_explained_fraction:
 
-                gapCond = maxGap > min(self.well_explained_max_gap, self.well_max_gap_fraction*len(sequence))
+                gapCond = maxGap > min(self.config.well_explained_max_gap, self.config.well_max_gap_fraction*len(sequence))
 
                 # borderCond: either no gap or if gap, first or last interval
                 borderCond = maxGap < 0 or (maxGap > 0 and (uncoveredGaps.index(maxGap) == 0 or uncoveredGaps.index(maxGap) == len(uncoveredGaps)-1))
 
                 if borderCond:
-                    gapCond = maxGap > min(self.well_explained_max_gap, 2 * self.well_max_gap_fraction * len(sequence))
+                    gapCond = maxGap > min(self.config.well_explained_max_gap, 2 * self.config.well_max_gap_fraction * len(sequence))
 
                 if gapCond:
                     allWellExplained = False
                     return False
 
-            if explainedFraction < self.ok_explained_fraction:
+            if explainedFraction < self.config.ok_explained_fraction:
                 allWellExplained = False
                 return False
 

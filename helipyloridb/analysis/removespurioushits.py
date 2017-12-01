@@ -14,7 +14,7 @@ class SpuriousEdgeRemover(GraphUser):
         self.found_homologies = list()
 
 
-    def analyse(self):
+    def _analyse(self):
 
         sortedVerts = sorted([x for x in self.graph.vertices], key=lambda x: len(self.graph.get_vertex(x).props['sequence']),
                              reverse=True)

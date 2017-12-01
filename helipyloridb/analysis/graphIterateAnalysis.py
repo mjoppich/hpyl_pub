@@ -10,6 +10,6 @@ class graphCleaner(GraphUser):
         self.genomeDB = genomeDB
         self.stepID = stepID
 
-    def analyse(self):
+    def _analyse(self):
         self.graph.remove_empty_vertices()
         return None

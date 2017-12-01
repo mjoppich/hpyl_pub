@@ -57,42 +57,48 @@ def mergeDicts( dict1, dict2, resultType=dict):
 
         if k in dict3:
 
-            if not type(v) == type(dict3[k]):
-                raise Exception("You try to merge two different objects!")
 
-            if type(v) == list:
-
-                dict3[k] = dict3[k] + v
-
-            elif type(v) == set:
-
-                dict3[k] = dict3[k].union(v)
-
-            elif type(v) == dict:
-
-                dict3[k] = mergeDicts(dict3[k], v)
-
-            elif type(v) == Counter:
-
-                dict3[k] = mergeCounter(dict3[k], v)
-
-            elif type(v) == defaultdict:
-                dict3[k] = mergeDefaultDict(dict3[k], v)
-
-            elif type(v) == int or type(v) == float:
-
-                dict3[k] = dict3[k] + v
+            if type(dict3[k]) == tuple and type(v) not in [tuple, set, list]:
+                oldvals = list(dict3[k])
+                oldvals.append(v)
+                dict3[k] = tuple(oldvals)
 
             else:
 
-                retSet = set()
-                retSet.add(v)
-                retSet.add(dict3[k])
+                if not type(v) == type(dict3[k]):
+                    raise Exception("You try to merge two different objects!")
 
-                if len(retSet) != 1:
-                    dict3[k] = tuple(retSet)
+                if type(v) == list:
+
+                    dict3[k] = dict3[k] + v
+
+                elif type(v) == set:
+
+                    dict3[k] = dict3[k].union(v)
+
+                elif type(v) == dict:
+
+                    dict3[k] = mergeDicts(dict3[k], v)
+
+                elif type(v) == Counter:
+
+                    dict3[k] = mergeCounter(dict3[k], v)
+
+                elif type(v) == defaultdict:
+                    dict3[k] = mergeDefaultDict(dict3[k], v)
+
+                elif type(v) == int or type(v) == float:
+                    dict3[k] = dict3[k] + v
+
                 else:
-                    dict3[k] = tuple(retSet)[0]
+                    retSet = set()
+                    retSet.add(v)
+                    retSet.add(dict3[k])
+
+                    if len(retSet) != 1:
+                        dict3[k] = tuple(retSet)
+                    else:
+                        dict3[k] = tuple(retSet)[0]
         else:
 
             dict3[k] = v

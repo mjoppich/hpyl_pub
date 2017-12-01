@@ -15,11 +15,11 @@ class ManyToOneCombination(GraphUser):
         self.used_vertex_ids = set()
         self.found_homologies = list()
 
-    def analyse(self):
+    def _analyse(self):
 
         retRes = HomologyResult()
 
-        sortedVerts = sorted([x for x in self.graph.vertices], key=lambda x: len(graph.get_vertex(x).props['sequence']), reverse=True)
+        sortedVerts = sorted([x for x in self.graph.vertices], key=lambda x: len(self.graph.get_vertex(x).props['sequence']), reverse=True)
         setRemoveVertexIDs = set()
 
         for x in sortedVerts:

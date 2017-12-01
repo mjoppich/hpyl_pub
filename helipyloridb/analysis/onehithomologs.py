@@ -32,7 +32,7 @@ class oneHitHomologs(GraphUser):
 
         return (lengthQuery+lengthSubject)/2.0
 
-    def analyse(self):
+    def _analyse(self):
 
         retRes = HomologyResult()
 
