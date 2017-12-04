@@ -1,8 +1,10 @@
 from collections import defaultdict
 
+import math
+
 from analysis.graphIterateAnalysis import graphCleaner
 from analysis.greedymultihits import GreedyCombinationConfig, GreedyCombinationCreator
-from analysis.onehithomologs import oneHitHomologs
+from analysis.onehithomologs import oneHitHomologs, OneHitHomologsConfig
 from analysis.onehitmultimap import ManyToOneCombination
 from analysis.onemultiplehits import oneMultipleHomologs, oneMultipleConfig
 from analysis.removespurioushits import SpuriousEdgeRemover
@@ -185,7 +187,9 @@ class HomologyBuilder:
             STEP 2: FIND EASY MATCHES
 
             """
-            stepOneHits = oneHitHomologs(graph, self.genomeDB)
+            oneHitConfig = OneHitHomologsConfig()
+
+            stepOneHits = oneHitHomologs(graph, self.genomeDB, oneHitConfig)
             homolResults = stepOneHits.analyse()
             homolResults.toDataBase(self.homolDB)
 
@@ -195,11 +199,33 @@ class HomologyBuilder:
 
             """
 
+
+            """
+            One of multiple. If excellent hit found, allow that one gene is homologous to many other
+            
+            """
             one2mulHitsConfig = oneMultipleConfig()
+            one2mulHitsConfig.minQueryLength = 0.9
+            one2mulHitsConfig.minSubjectLength = 0.9
+            one2mulHitsConfig.allowMultiple = True
 
             one2mulHits = oneMultipleHomologs(graph, self.genomeDB, one2mulHitsConfig)
             homolResults = one2mulHits.analyse()
             homolResults.toDataBase(self.homolDB)
+
+
+            """
+            
+            One of multiple, allow non-excellent hits
+            
+            """
+            one2mulHitsConfig = oneMultipleConfig()
+            one2mulHitsConfig.allowMultiple = False
+
+            one2mulHits = oneMultipleHomologs(graph, self.genomeDB, one2mulHitsConfig)
+            homolResults = one2mulHits.analyse()
+            homolResults.toDataBase(self.homolDB)
+
 
             """
 
@@ -218,12 +244,23 @@ class HomologyBuilder:
 
             greedyConfig = GreedyCombinationConfig()
             greedyConfig.sortingFunctionAssembly = lambda x: x.props['info'].identity
+            greedyCreator = GreedyCombinationCreator(graph, self.genomeDB, greedyConfig)
+            retRes = greedyCreator.analyse()
+            retRes.toDataBase(self.homolDB)
+
+
+
+            greedyConfig = GreedyCombinationConfig()
+            greedyConfig.minExplainedThreshold=0.5
+            greedyConfig.allowTargetOverlaps=True
 
             greedyCreator = GreedyCombinationCreator(graph, self.genomeDB, greedyConfig)
             retRes = greedyCreator.analyse()
             retRes.toDataBase(self.homolDB)
 
             greedyConfig = GreedyCombinationConfig()
+            greedyConfig.minExplainedThreshold=0.55
+
             greedyCreator = GreedyCombinationCreator(graph, self.genomeDB, greedyConfig)
             retRes = greedyCreator.analyse()
             retRes.toDataBase(self.homolDB)
@@ -253,9 +290,56 @@ class HomologyBuilder:
             omConfig.minQueryLength = 0.8
             omConfig.minSubjectLength = 0.8
 
+            def checkEdge(config, edge, source, target):
+
+                queryLength = config.get_seq_fraction(edge, source)
+                subjectLength = config.get_seq_fraction(edge, target)
+
+                considerEdge = queryLength > config.minQueryLength
+                considerEdge = considerEdge and subjectLength > config.minSubjectLength
+                considerEdge = considerEdge and edge.props['info'].identity > config.minIdentity
+
+                considerEdge = considerEdge and min([queryLength, subjectLength]) > 0.5
+
+                return considerEdge
+
+            omConfig.considerEdgeFunc = checkEdge
+
             omAnalysis = oneMultipleHomologs(graph, self.genomeDB, omConfig)
             retRes = omAnalysis.analyse()
+            retRes.toDataBase(self.homolDB)
 
+            """
+
+            extremely long sequences > 500!
+
+            """
+
+
+            def checkEdgeLong(config, edge, source, target):
+
+                edgeInfo = edge.props['info']
+
+                minSeqLength = min([len(source.props['sequence']), len(target.props['sequence'])])
+
+                queryLength = config.get_seq_fraction(edge, source)
+                subjectLength = config.get_seq_fraction(edge, target)
+
+                if edgeInfo.identity * minSeqLength > 500:
+
+                    if edgeInfo.evalue < math.pow(10, -90):
+
+                        if queryLength > config.minQueryLength and subjectLength > config.minQueryLength:
+                            return True
+
+                return False
+
+            omConfig.minQueryLength = 0.6
+            omConfig.minSubjectLength = 0.6
+            omConfig.considerEdgeFunc = checkEdgeLong
+
+            omAnalysis = oneMultipleHomologs(graph, self.genomeDB, omConfig)
+            retRes = omAnalysis.analyse()
             retRes.toDataBase(self.homolDB)
 
             """
@@ -266,6 +350,19 @@ class HomologyBuilder:
 
             edgeRemover = SpuriousEdgeRemover(graph, self.genomeDB)
             edgeRemover.analyse()
+
+
+            """
+            
+            Some relations may have been hidden by combinations
+            
+            """
+            oneHitConfig = OneHitHomologsConfig(minIDScore=0.8, minLengthScore=0.7)
+
+            stepOneHits = oneHitHomologs(graph, self.genomeDB, oneHitConfig)
+            homolResults = stepOneHits.analyse()
+            homolResults.toDataBase(self.homolDB)
+
 
             """
 
@@ -299,6 +396,11 @@ class HomologyBuilder:
                             seenDiamondInfos.add(diamondInfo)
 
             printGraphEdges(graph)
+
+
+
+        allDupRelations = self.geneDupDB.get_gene_relations()
+        allDupRelations.toDataBase(self.homolDB)
 
         self.homolDB.finalize()
 

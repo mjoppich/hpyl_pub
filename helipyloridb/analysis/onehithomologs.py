@@ -1,15 +1,25 @@
 from analysis.graphuser import GraphUser
 from analysis.homologyresults import HomologyResult
 
+class OneHitHomologsConfig:
+
+    def __init__(self, minIDScore=0.9, minLengthScore=0.8):
+
+        self.minIDScore = minIDScore
+        self.minLengthScore = minLengthScore
+
+
 
 class oneHitHomologs(GraphUser):
 
-    def __init__(self, graph, genomeDB, stepID='oneHitHomologs'):
+    def __init__(self, graph, genomeDB, config, stepID='One2OneHomolog'):
 
         super(oneHitHomologs, self).__init__(graph, genomeDB, stepID)
 
         self.genomeDB = genomeDB
         self.stepID = stepID
+
+        self.config = config
 
         self.used_vertex_ids = set()
         self.found_homologies = list()
@@ -24,11 +34,6 @@ class oneHitHomologs(GraphUser):
 
         lengthQuery =  (len(alignment.query) / len(qseq))
         lengthSubject =(len(alignment.subject) / len(sseq))
-
-        if lengthQuery < 0.8:
-            return 0
-        if lengthSubject < 0.8:
-            return 0
 
         return (lengthQuery+lengthSubject)/2.0
 
@@ -53,8 +58,8 @@ class oneHitHomologs(GraphUser):
                 # second condition is sanity check, should be always the case => unidirectional
                 if len(targetVertex.neighbors) == 1 and targetVertex.neighbors[0].target == vertex:
                     diamondResult = targetVertex.neighbors[0].props['info']
-                    identityScore = self.makeIdentityScore(diamondResult) > 0.9
-                    lengthScore = self.makeLengthScore(diamondResult) > 0.8
+                    identityScore = self.makeIdentityScore(diamondResult) > self.config.minIDScore
+                    lengthScore = self.makeLengthScore(diamondResult) > self.config.minLengthScore
 
                     if identityScore and lengthScore:
                         self.used_vertex_ids.add(vertex.name)

@@ -4,10 +4,33 @@ from abc import ABC, abstractmethod
 
 import logging
 
+class IDUser:
 
-class GraphUser(ABC):
+    def getIDObj(self, edge, vertex):
+
+        diamondResult = edge.props['info']
+
+        if vertex.name == (diamondResult.query.genome, diamondResult.query.seqid):
+            return diamondResult.query
+
+        if vertex.name == (diamondResult.subject.genome, diamondResult.subject.seqid):
+            return diamondResult.subject
+
+        return None
+
+    def get_seq_fraction(self, edge, node):
+
+        idobj = self.getIDObj(edge, node)
+        qlen = len(idobj) / len(node.props['sequence'])
+
+        return qlen
+
+
+class GraphUser(IDUser, ABC):
 
     def __init__(self, graph, genomeDB, stepID = "GraphUser"):
+
+        super(GraphUser, self).__init__()
 
         self.graph = graph
         self.stepID = stepID
@@ -55,15 +78,5 @@ class GraphUser(ABC):
         """
         pass
 
-    def getIDObj(self, edge, vertex):
 
-        diamondResult = edge.props['info']
-
-        if vertex.name == (diamondResult.query.genome, diamondResult.query.seqid):
-            return diamondResult.query
-
-        if vertex.name == (diamondResult.subject.genome, diamondResult.subject.seqid):
-            return diamondResult.subject
-
-        return None
 

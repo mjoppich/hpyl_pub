@@ -104,6 +104,10 @@ class Graph:
                 idx = vertNode.neighbors.index(x)
                 del vertNode.neighbors[idx]
 
+        for vid in vertixIDs:
+            if vid in self.vertices:
+                del self.vertices[vid]
+
 
     def remove_vertex(self, vertex):
 

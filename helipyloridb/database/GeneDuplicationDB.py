@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 
+from analysis.homologyresults import HomologyResult
 from database.DiamondResult import DiamondResult
 from database.genomedb import GenomeDB
 
@@ -60,8 +61,18 @@ class GeneDuplicationDB:
 
                 self.add_gene_duplication(genomeID, ret.subject.seqid, ret.query.seqid)
 
+    def get_gene_relations(self):
 
+        retRes = HomologyResult()
 
+        for organism in self.duplicatedGenes:
+
+            allDups = self.duplicatedGenes[organism]
+
+            for dup in allDups:
+                retRes.homology_relations.append( ( (organism, dup[0]), (organism, dup[1]), 'gene_dup_db' ) )
+
+        return retRes
 
     def add_gene_duplication(self, organism, gene1, gene2):
 

@@ -50,10 +50,7 @@ class GreedyCombinationCreator(GraphUser):
             target2tree = defaultdict(ModIntervalTree)
             target2vertex = dict()
 
-            if vertex.name[1] == 'jhp_0959':
-                vertex.name = vertex.name
-
-            if vertex.name[1] == 'HP_0091':
+            if vertex.name[1] in ['jhp_0959', 'HP_1551']:
                 vertex.name = vertex.name
 
             if len(vertex.neighbors) < 2:

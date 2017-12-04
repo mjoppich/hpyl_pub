@@ -109,6 +109,10 @@ class HomologyDatabase:
                 self.homologies[x] = allElems
                 if properties != None:
                     self.homologyProperties[x][ idtuple ] = mergeDicts(self.homologyProperties[x].get(idtuple, None), properties)
+
+                if len(allElems) > 20:
+                    print(x)
+
                 return
 
         newRel = set()

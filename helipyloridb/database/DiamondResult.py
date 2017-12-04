@@ -48,6 +48,10 @@ class DiamondResult:
         self.evalue = 1.0
         self.bit_score = 0
 
+    def has_id(self, idpart):
+
+        return self.query.seqid == idpart or self.subject.seqid == idpart
+
     def __eq__(self, other):
 
         if other == None:

@@ -10,6 +10,11 @@ class ModIntervalTree(IntervalTree):
     def __init__(self, intervals=None):
         super(ModIntervalTree, self).__init__(intervals)
 
+
+    def sum_intervals(self):
+
+        return sum([len( ModInterval(x.begin, x.end) ) for x in self.all_intervals])
+
     def addi(self, begin, end, data=None):
         """
         Shortcut for add(Interval(begin, end, data)).

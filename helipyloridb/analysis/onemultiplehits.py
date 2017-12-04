@@ -1,8 +1,8 @@
-from analysis.graphuser import GraphUser
+from analysis.graphuser import GraphUser, IDUser
 from analysis.homologyresults import HomologyResult
 
 
-class oneMultipleConfig:
+class oneMultipleConfig(IDUser):
 
     def __init__(self):
         self.minIdentity = 0.8
@@ -13,9 +13,27 @@ class oneMultipleConfig:
         self.allowMultiple = False
         self.betterEdgeCheck = False
 
+        def defaultEdgeFunc(confObj, edge, source, target):
+            queryLength = confObj.get_seq_fraction(edge, source)
+            subjectLength = confObj.get_seq_fraction(edge, target)
+
+            retVal = queryLength > confObj.minQueryLength#
+            retVal = retVal and subjectLength > confObj.minSubjectLength
+            retVal = retVal and edge.props['info'].identity > confObj.minIdentity
+
+            return retVal
+
+        self.considerEdgeFunc = defaultEdgeFunc
+
+
+    def considerEdge(self, edge, source, target):
+
+        return self.considerEdgeFunc(self, edge, source, target)
+
+
 class oneMultipleHomologs(GraphUser):
 
-    def __init__(self, graph, genomeDB, config, stepID='one2multiHitHomologs'):
+    def __init__(self, graph, genomeDB, config, stepID='OneOfManyHomolog'):
 
         super(oneMultipleHomologs, self).__init__(graph, genomeDB, stepID)
         self.config = config
@@ -53,35 +71,23 @@ class oneMultipleHomologs(GraphUser):
         for x in sortedVerts:
             vertex = self.graph.get_vertex(x)
 
-            if vertex.name in setRemoveVertexIDs:
+            if not self.config.allowMultiple and vertex.name in setRemoveVertexIDs:
                 continue # already assigned
 
-            if vertex.name[1] == 'HPP12_1154':
+            if vertex.name[1] in ['HP_1526', 'jhp_0476']:
                 vertex.name = vertex.name
 
             for edge in sorted(vertex.neighbors, key=self.config.edgeSortExpression, reverse=True):
 
                 targetVertex = edge.target
 
-                if targetVertex.name in setRemoveVertexIDs:
+                if not self.config.allowMultiple and targetVertex.name in setRemoveVertexIDs:
                     continue # already assigned
-
-                vertexIDObj = self.getIDObj(edge, vertex)
-                targetVertexIDObj = self.getIDObj(edge, targetVertex)
-
-                queryLength = len(vertexIDObj) / len(vertex.props['sequence'])
-                subjectLength = len(targetVertexIDObj) / len(targetVertex.props['sequence'])
 
                 acceptEdge = False
 
-                considerEdge = False
-                if self.config.allowPartialLength:
-                    considerEdge = (queryLength > self.config.minQueryLength or subjectLength > self.config.minSubjectLength) and edge.props[
-                                                                                                              'info'].identity > self.config.minIdentity
-                    considerEdge = considerEdge and min([queryLength, subjectLength]) > 0.5
-                else:
-                    considerEdge = queryLength > self.config.minQueryLength and subjectLength > self.config.minSubjectLength and edge.props[
-                                                                                                             'info'].identity > self.config.minIdentity
+                considerEdge = self.config.considerEdge(edge, vertex, targetVertex)
+                subjectLength = self.get_seq_fraction(edge, targetVertex)
 
                 if considerEdge:
 
@@ -89,10 +95,10 @@ class oneMultipleHomologs(GraphUser):
 
                     for targetEdge in targetVertex.neighbors:
                         if targetEdge.props['info'].identity > edge.props['info'].identity:
-                            otherVertexObj = self.getIDObj(targetEdge, targetEdge.target)
-                            otherVertexLength = len(otherVertexObj) / len(targetEdge.target.props['sequence'])
 
-                            if subjectLength > 0.9 and otherVertexLength > 0.9:
+                            otherVertexLength = self.get_seq_fraction(targetEdge, targetEdge.target)
+
+                            if subjectLength > self.config.minQueryLength and otherVertexLength > self.config.minSubjectLength:
                                 continue
 
                             if otherVertexLength > subjectLength:
@@ -101,9 +107,16 @@ class oneMultipleHomologs(GraphUser):
 
                 if acceptEdge:
 
-                    if vertex.name in setRemoveVertexIDs or targetVertex.name in setRemoveVertexIDs:
-                        self.log_warn("Duplicate vertices: " + str(vertex.name))
-                        self.log_warn("Duplicate vertices: " + str(targetVertex.name))
+                    if not self.config.allowMultiple and (vertex.name in setRemoveVertexIDs or targetVertex.name in setRemoveVertexIDs):
+                        if vertex.name in setRemoveVertexIDs:
+                            self.log_warn("Duplicate vertices: " + str(vertex.name))
+                            self.log_warn("Opposite: " + str(targetVertex.name))
+                        elif targetVertex.name in setRemoveVertexIDs:
+                            self.log_warn("Duplicate vertices: " + str(targetVertex.name))
+                            self.log_warn("Opposite: " + str(vertex.name))
+                        else:
+                            self.log_warn("Duplicate vertex: " + str(targetVertex.name))
+                            self.log_warn("Duplicate vertex: " + str(vertex.name))
 
                     setRemoveVertexIDs.add(vertex.name)
                     setRemoveVertexIDs.add(targetVertex.name)
@@ -119,6 +132,8 @@ class oneMultipleHomologs(GraphUser):
 
                     if not self.config.allowMultiple:
                         break
+                else:
+                    pass
 
         self.graph.remove_vertices_by_id(setRemoveVertexIDs)
         self.graph.remove_empty_vertices()
