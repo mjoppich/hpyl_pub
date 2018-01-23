@@ -169,7 +169,7 @@ Address correspondence to \@corraddress.\par
 \cfoot{%
   \tikz[remember picture,overlay]
   \node[transform shape,rotate=90,anchor=north,yshift=-6pt,text=gray] at (current page.west) 
-  {\foreach \n in {1,...,10}{mSystems Submission Template\hspace{1em}}};
+  {\foreach \n in {1,...,10}{Submission Template\hspace{1em}}};
 }
 \pagestyle{fancy}
 
