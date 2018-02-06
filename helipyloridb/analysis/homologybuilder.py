@@ -87,7 +87,7 @@ class HomologyBuilder:
 
             fileName = filebase
 
-            wantedGenomes = ['AE000511', 'CP001217', 'AE001439']
+            wantedGenomes = ['AE000511', 'CP001217', 'AE001439', 'CP001173']
 
             if not queryGenome in wantedGenomes:
                 continue

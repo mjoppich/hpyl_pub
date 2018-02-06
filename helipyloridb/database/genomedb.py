@@ -11,6 +11,7 @@ class GenomeDB:
     def __init__(self, location, loadAll = False):
 
         self.genomes = defaultdict(lambda: dict())
+        self.location = location
 
         if loadAll:
             for file in glob.glob(location+'/*.gb'):
@@ -30,6 +31,16 @@ class GenomeDB:
         return genomeID
 
     def loadGenome(self, file):
+
+
+        if not os.path.isfile(file):
+
+            loadedFile = file
+            file = self.location + "/" + file + ".gb"
+
+            if not os.path.isfile(file):
+                raise ValueError("Not an available genome:", loadedFile)
+
 
         if os.path.isfile(file + "e"):
 

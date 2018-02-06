@@ -226,7 +226,13 @@ class HomologyDatabase:
 
                 aline = line.strip().split('\t')
 
-                homdb.homologies[aline[0]].add( (aline[1], aline[2]) )
+                if aline[0].startswith('COMBID'):
+                    continue
+                elif aline[0].startswith('HOMID'):
+                    homdb.homologies[aline[0]].add( (aline[1], aline[2]) )
+                else:
+                    continue
+
 
         return homdb
 
