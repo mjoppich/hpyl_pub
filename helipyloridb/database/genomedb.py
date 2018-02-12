@@ -8,23 +8,28 @@ from Bio import SeqIO
 class GenomeDB:
 
 
-    def __init__(self, location, loadAll = False):
+    def __init__(self, location, loadAll = False, fileFormat='embl', fileExtension='.gb'):
 
         self.genomes = defaultdict(lambda: dict())
         self.location = location
+        self.fileFormat = fileFormat
+        self.fileExtension = fileExtension
 
         if loadAll:
-            for file in glob.glob(location+'/*.gb'):
+            for file in glob.glob(location+'/*' + self.fileExtension):
                 self.loadGenome(file)
 
 
     def _get_genome_id(self, file):
 
-        gbParser = SeqIO.parse(file, "embl")
+        gbParser = SeqIO.parse(file, self.fileFormat)
         genomeID=None
 
         for gb_record in gbParser:
             genomeID = gb_record.name
+
+            if "_" in genomeID:
+                genomeID = genomeID.replace('_', '')
 
             break
 
@@ -35,11 +40,15 @@ class GenomeDB:
 
         if not os.path.isfile(file):
 
-            loadedFile = file
-            file = self.location + "/" + file + ".gb"
+            if '_' in file:
+                file = file.replace('_', '')
 
             if not os.path.isfile(file):
-                raise ValueError("Not an available genome:", loadedFile)
+                loadedFile = file
+                file = self.location + "/" + file + self.fileExtension
+
+                if not os.path.isfile(file):
+                    raise ValueError("Not an available genome:", file)
 
 
         if os.path.isfile(file + "e"):
@@ -67,7 +76,7 @@ class GenomeDB:
 
 
 
-        gbParser = SeqIO.parse(file, "embl")
+        gbParser = SeqIO.parse(file, self.fileFormat)
 
         with open(file + "e", 'w') as outfile:
 
@@ -141,10 +150,19 @@ class GenomeDB:
 
                             translation = str(ntSeq.translate())
 
+                    if translation == None:
+                        print("No Translation found for " + productID + " in genome " + genomeID)
+                        continue
+
                     self.genomes[genomeID][productID] = translation
 
             for prodID in self.genomes[genomeID]:
                 translation = self.genomes[genomeID][prodID]
+
+                if translation == None:
+                    print("No Translation for " + prodID + " in genome " + genomeID)
+                    continue
+
                 outfile.write(">" + str(prodID) + "\n" + translation + "\n")
 
 
@@ -152,6 +170,16 @@ class GenomeDB:
 
     def get_sequence(self, genome, productID):
         return self.genomes.get(genome, {}).get(productID, None)
+
+    def writeBLASTfastas(self, outpath):
+
+        for genome in self.genomes:
+            with open(outpath + "/" + genome + ".fa", 'w') as outfile:
+                for seqid in self.genomes[genome]:
+                    protSeq = self.genomes[genome][seqid]
+
+                    outfile.write(">" + seqid + " " + genome + "\n")
+                    outfile.write(protSeq + "\n")
 
     def writeCSV(self, outpath):
 

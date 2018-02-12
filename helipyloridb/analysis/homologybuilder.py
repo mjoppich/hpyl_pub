@@ -22,11 +22,13 @@ import os
 
 
 class HomologyBuilder:
-    def __init__(self, basePath):
+    def __init__(self, basePath, inputFormat="embl", inputExtension='.gb'):
 
         self.basePath = basePath
 
-        self.genomeDB = GenomeDB(self.basePath)
+        self.genomeInputExtension = inputExtension
+
+        self.genomeDB = GenomeDB(self.basePath, fileFormat=inputFormat, fileExtension=inputExtension)
         self.homolDB = HomologyDatabase()
         self.geneDupDB = GeneDuplicationDB()
 
@@ -87,19 +89,20 @@ class HomologyBuilder:
 
             fileName = filebase
 
-            wantedGenomes = ['AE000511', 'CP001217', 'AE001439', 'CP001173']
+            #wantedGenomes = ['AE000511', 'CP001217', 'AE001439', 'CP001173']
 
-            if not queryGenome in wantedGenomes:
+            wantedGenomes = None
+            if wantedGenomes != None and not queryGenome in wantedGenomes:
                 continue
 
-            if not subjectGenome in wantedGenomes:
+            if wantedGenomes != None and not subjectGenome in wantedGenomes:
                 continue
 
             if queryGenome == subjectGenome:
                 continue
 
-            self.genomeDB.loadGenome(self.basePath + "/genomes/" + queryGenome + ".gb")
-            self.genomeDB.loadGenome(self.basePath + "/genomes/" + subjectGenome + ".gb")
+            self.genomeDB.loadGenome(self.basePath + "/genomes/" + queryGenome + self.genomeInputExtension)
+            self.genomeDB.loadGenome(self.basePath + "/genomes/" + subjectGenome + self.genomeInputExtension)
 
             self.geneDupDB.load_organism(self.basePath + "/alignments/" + queryGenome + "." + queryGenome + ".aliout",
                                          self.genomeDB)
