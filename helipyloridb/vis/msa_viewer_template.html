@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+</body>
+</html><html>
+<head>
+
+<meta name="description" content="msa viewer" />
+<script src="https://s3.eu-central-1.amazonaws.com/cdn.bio.sh/msa/latest/msa.min.gz.js"></script>
+
+</head>
+
+<body>
+
+
+{% for msaGroup in allGroups %}
+<h1>{{msaGroup}}</h1>
+<div id="msadiv{{loop.index}}">Click To Run</div>
+{% endfor %}
+
+
+<script>
+
+
+
+
+var runFunction = function(fastaSeqs, elemID)
+{
+
+var seqs =  msa.io.fasta.parse(fastaSeqs);
+
+var opts = {
+    el: document.getElementById(elemID),
+    colorscheme: {
+    scheme: "helix", // name of your color scheme
+    colorBackground: true, // otherwise only the text will be colored
+    showLowerCase: true, // used to hide and show lowercase chars in the overviewbox
+    opacity: 0.6 //opacity for the residues
+},
+    vis: {
+    sequences: true,
+    markers: true,
+    metacell: false,
+    conserv: true,
+    overviewbox: false,
+    seqlogo: true,
+    gapHeader: false,
+    leftHeader: true,
+
+    // about the labels
+    labels: true,
+    labelName: true,
+    labelId: true,
+    labelPartition: false,
+    labelCheckbox: false,
+
+    // meta stuff
+    metaGaps: true,
+    metaIdentity: true,
+    metaLinks: true
+},
+    // smaller menu for JSBin
+    menu: "small",
+    bootstrapMenu: true,
+     seqs: seqs
+
+};
+
+var m = new msa.msa(opts);
+m.render();
+
+}
+
+var fastaSeqs = []
+
+{% for msaGroup in allGroups %}
+fastaSeqs.push("{{allGroups[msaGroup]}}");
+{% endfor %}
+
+
+{% for msaGroup in allGroups %}
+
+runFunction(fastaSeqs[{{loop.index-1}}], "msadiv{{loop.index}}");
+
+{% endfor %}
+
+
+</script>
+
+</body>
+</html>

@@ -58,6 +58,20 @@ class HomologyDatabase:
         return orgs
 
 
+    def get_cluster(self, homID):
+
+        clusterProt = self.homologies.get(homID)
+
+        if clusterProt == None:
+            return None
+
+        clusterDict =  defaultdict(list)
+
+        for elem in clusterProt:
+            clusterDict[elem[0]].append(elem[1])
+
+        return clusterDict
+
     def get_homology_cluster(self, homID):
 
         clusterProt = self.homologies.get(homID)
@@ -71,6 +85,41 @@ class HomologyDatabase:
             clusterDict[elem[0]] = elem[1]
 
         return clusterDict
+
+    def get_organism_elements(self, orgID):
+
+        foundElems = set()
+
+        for homolID in self.homologies:
+            elems = self.homologies[homolID]
+
+            for id in elems:
+                if id[0] == orgID:
+                    foundElems.add(id[1])
+
+        for homolID in self.combinations:
+            elems = self.combinations[homolID]
+            for id in elems:
+                if id[0] == orgID:
+                    foundElems.add(id[1])
+
+        return foundElems
+
+
+
+    def findHomologyForGeneID(self, searchID):
+
+        retHomIDs = []
+
+        for homolID in self.homologies:
+
+            elems = self.homologies[homolID]
+
+            for id in elems:
+                if id[1] == searchID:
+                    retHomIDs.append( homolID )
+
+        return list(set(retHomIDs))
 
     def findHomologyForID(self, searchID):
 

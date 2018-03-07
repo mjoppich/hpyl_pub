@@ -193,3 +193,10 @@ class GenomeDB:
                     allelems = [str(x).strip() for x in allelems]
 
                     outfile.write("\t".join(allelems) + "\n")
+
+    def get_sequences_for_genome(self, orgname, default=None):
+
+        if not orgname in self.genomes:
+            return default
+
+        return [x for x in self.genomes[orgname]]

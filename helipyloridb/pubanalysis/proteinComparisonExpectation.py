@@ -29,7 +29,7 @@ if __name__ == '__main__':
     allowedOrgs = ['CP001217', 'AE000511']
 
     compareAA = (['W'], ['F', 'G', 'A'])
-    compareAA = (['W'], ['P', 'F', 'Y'])
+    compareAA = (['W'], ['F', 'Y'])
     #compareAA = (['W', 'M'], ['H', 'F', 'Y', 'P', 'K'])
     #compareAA = (['W', 'M'], ['F', 'G', 'A'])
     #compareAA = (['W'], ['F', 'Y', 'W' ])
@@ -56,6 +56,9 @@ if __name__ == '__main__':
                            'V': 0.0558530986993114, 'Q': 0.037242610975506615, 'G': 0.05770982036611247,
                            'Y': 0.03683743654398011}
 
+    aaUsage['CP001217'] = Counter({'L': 0.11358863299560508, 'K': 0.0874111952781647, 'I': 0.07241631526391779, 'A': 0.07042556303942708, 'E': 0.06859127249136603, 'S': 0.06804047650848773, 'G': 0.05978235290376336, 'V': 0.0583907344158446, 'N': 0.05513302422611892, 'F': 0.053709604584454326, 'D': 0.04633428100771496, 'T': 0.04311600424863415, 'Y': 0.03615536771674076, 'Q': 0.03585898096382937, 'R': 0.03454750138335021, 'P': 0.03356293766337842, 'M': 0.023509956941237826, 'H': 0.021657857747079068, 'C': 0.010856913888835888, 'W': 0.00691102673204984, '-': 0.0015989620103417355})
+    aaUsage['AE000511'] = aaUsage['CP001217']
+
 
     #compareAA = (compareAA[0], [x for x in aaUsage['CP001217'] if x != '*' and not x in compareAA[0]])
 
@@ -73,6 +76,8 @@ if __name__ == '__main__':
         genePairWithAA = set()
 
         printLocusTags = defaultdict(set)
+
+        trpCounts = Counter()
 
         for homID in homolDB.homologies:
 
@@ -104,6 +109,9 @@ if __name__ == '__main__':
             for aa in allAA:
                 if aa in seqI or aa in seqJ:
                     genePairWithAA.add(orgIT[1])
+
+            trpCounts[orgIT[0]] += seqI.count('W')
+            trpCounts[orgJT[0]] += seqJ.count('W')
 
 
             for diffAA in allAA:
@@ -148,9 +156,18 @@ if __name__ == '__main__':
                     losses = 0
                     changesAAA = 0
 
+                    printAlignment = False
+
                     for i in range(0, len(alignment[0])):
 
                         if not alignment[0][i] == alignment[1][i]:
+
+                            aaI = alignment[0][i]
+                            aaJ = alignment[0][j]
+
+                            if set([aaI, aaJ]) == set(['W', 'L']):
+                                printAlignment = True
+
                             if alignment[0][i] == diffAA and alignment[1][i] != '-':
                                 changesAAA += 1
 
@@ -158,6 +175,13 @@ if __name__ == '__main__':
                                 losses += 1
                             else:
                                 changes += 1
+
+
+
+                    if printAlignment and False:
+                        print("WL Changes", orgIT)
+                        print(alignment[0])
+                        print(alignment[1])
 
 
                     expectedWChange = changes * aaUsage[orgI][diffAA]
@@ -169,8 +193,8 @@ if __name__ == '__main__':
 
                     expCountDiff = abs(expectedCount-aaCountJ)
 
-                    if (abs(actualChange) >= 0.15 and abs(expCountDiff) > 1) or (abs(actualChange) < 0.15 and abs(expCountDiff) > 0.8):
-                        print(diffAA, orgIT, len(seqI), aaCountI, orgJT, len(seqJ), aaCountJ, kdaDiff, changes, changesAAA, countDiff, expectedWChange, expectedCount, expCountDiff)
+                    if (abs(actualChange) >= 0.2 and abs(expCountDiff) > 1) or (abs(actualChange) < 0.2 and abs(expCountDiff) > 0.8):
+                        #print(diffAA, orgIT, len(seqI), aaCountI, orgJT, len(seqJ), aaCountJ, kdaDiff, changes, changesAAA, countDiff, expectedWChange, expectedCount, expCountDiff)
                         targetLT.append(orgIT[1])
                         add_element = True
                     else:
@@ -191,7 +215,7 @@ if __name__ == '__main__':
 
                     printLocusTags[myCountDiff].add(orgIT[1])
 
-                    allDiffs.append( (countDiff, kdaAvg, diffAA, orgIT[1]) )
+                    allDiffs.append( (countDiff, kdaAvg, diffAA, orgIT, orgJT) )
 
         print(orgI, orgJ, foundGenes, len(allDiffs))
 
@@ -200,9 +224,12 @@ if __name__ == '__main__':
             for absDiff in printLocusTags:
                 print(allAA, absDiff, len(printLocusTags[absDiff]), sorted(printLocusTags[absDiff]))
 
-        diffGenes = set([x[3] for x in allDiffs])
+        diffGenes = set([x[3][1] for x in allDiffs])
+        diffGenePairs = set([(x[3], x[4]) for x in allDiffs])
 
-        return allDiffs, diffGenes, genesWithDiff, genePairWithAA
+        print(trpCounts)
+
+        return allDiffs, diffGenes, genesWithDiff, genePairWithAA, diffGenePairs
 
 
     print("Available Orgs:", homolDB.get_all_organisms())
@@ -224,20 +251,22 @@ if __name__ == '__main__':
             if not orgI in allowedOrgs or not orgJ in allowedOrgs:
                 continue
 
-            allOrgDiffs, allDiffGenes, genesWithDiff, genePairsWithAA = calculateDifferences(orgI, orgJ, compareAA[0])
+            allOrgDiffs, allDiffGenes, genesWithDiff, genePairsWithAA, diffGenePairs = calculateDifferences(orgI, orgJ, compareAA[0])
             testDiffs[(orgI, orgJ)] = allOrgDiffs
 
             print("DiffGenes:", len(allDiffGenes))
             print("GenesWithDiff:", len(genesWithDiff))
             print("GenePairsWithAA:", len(genePairsWithAA))
+            print("DiffGenes:", allDiffGenes)
+            print("GenesWithDiff", genesWithDiff)
+            print("DiffGenePairs", diffGenePairs)
 
-            allOrgDiffs, allDiffGenes, genesWithDiff, genePairsWithAA = calculateDifferences(orgI, orgJ, compareAA[1], only_diffs=False, excludeGenes=allDiffGenes)
+            allOrgDiffs, allDiffGenes, genesWithDiff, genePairsWithAA, diffGenePairs = calculateDifferences(orgI, orgJ, compareAA[1], only_diffs=False, excludeGenes=allDiffGenes)
             controlDiffs[(orgI, orgJ)] = allOrgDiffs
             print("DiffGenes:", len(allDiffGenes))
             print("GenesWithDiff:", len(genesWithDiff))
             print("GenePairsWithAA:", len(genePairsWithAA))
-
-
+            print("DiffGenePairs", diffGenePairs)
 
 
             fig, ax = plt.subplots()
