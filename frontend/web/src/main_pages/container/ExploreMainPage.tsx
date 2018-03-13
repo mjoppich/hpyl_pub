@@ -97,9 +97,9 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
                     for (var si=0; si < homCluster['msa'].length; ++si)
                     {
                         var seq = homCluster['msa'][si];
-                        var name = seq['org'] + " " + seq['seqid'];
+                        //var name = seq['org'] + " " + seq['seqid'];
 
-                        homClusterAlign.align.push({org: seq['org'], seqid: seq['seqid'], id: name, alignment: seq['alignment'], xrefs: seq['xrefs'] })
+                        homClusterAlign.align.push(seq)
                     }
                     console.log("HOMALIGN");
                     console.log(homClusterAlign);

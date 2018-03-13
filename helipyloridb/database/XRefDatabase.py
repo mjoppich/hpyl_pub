@@ -1,4 +1,6 @@
 from collections import defaultdict
+
+from nertoolkit.geneontology.GeneOntology import GeneOntology, GOTerm
 from porestat.utils.DataFrame import DataFrame
 
 from utils import fileLocation
@@ -9,8 +11,10 @@ class XRefDatabase:
     def __init__(self, fileName=fileLocation + "/hpp12_hp_xref"):
 
         self.df = DataFrame.parseFromFile(fileName)
+        self.df_add = DataFrame.parseFromFile(fileName + "_add")
 
         self.infos = {}
+        self.add_infos = defaultdict(list)
         self.xrefs = {
             'Uniprot': 'GeneIdentity.UNIPROT',
         'GO': 'GeneIdentity.GO_ID',
@@ -19,9 +23,14 @@ class XRefDatabase:
 
         }
 
+        self.go = GeneOntology("/mnt/c/ownCloud/data/" + "miRExplore/go/go.obo")
+
         for row in self.df:
             elemName = row['GeneIdentity.GENE_NAME']
             self.infos[elemName] = row
+
+        for row in self.df_add:
+            self.add_infos[row['XREF']].append(row['GOID'])
 
 
     def get_infos(self, elemName, default=None):
@@ -33,7 +42,7 @@ class XRefDatabase:
 
     def make_infos(self, elemName):
 
-        retElem = {}
+        retElem = defaultdict(list)
 
         for x in self.xrefs:
             retElem[x] = []
@@ -56,8 +65,74 @@ class XRefDatabase:
                     continue
                 retElem[x].append(vals)
 
+        retElem['TMGO'] = []
+        for x in self.xrefs:
+            for vals in retElem[x]:
+                if vals in self.add_infos:
+                    for addI in self.add_infos[vals]:
+
+                        if self.goNotIncluded(addI, retElem):
+                            retElem['TMGO'].append(addI)
+
+
+        retElem = self.addGOCats(retElem)
+
+        retElem = self.restructureGO(retElem)
+
         return retElem
 
+    def restructureGO(self, retElem):
+
+        print([x for x in retElem])
+
+        restructuredGO = {}
+        restructuredGO['Uniprot'] = retElem['Uniprot']
+
+        restructuredGO['Interpro'] = retElem['Interpro']
+        restructuredGO['Pfam'] =retElem['Pfam']
+        restructuredGO['GOTERMS'] = retElem['GOTERMS']
+
+        restructuredGO['GO'] = defaultdict(list)
+        restructuredGO['TMGO'] = defaultdict(list)
+
+        for goID in retElem['GO']:
+            exGO = self.go.getID(goID)
+            for x in exGO.namespace:
+                restructuredGO['GO'][x].append(goID)
+
+        for goID in retElem['TMGO']:
+            exGO = self.go.getID(goID)
+            for x in exGO.namespace:
+                restructuredGO['TMGO'][x].append(goID)
+
+        return restructuredGO
+
+    def addGOCats(self, retElems):
+
+        retElems['GOTERMS'] = {}
+
+        for goID in retElems['GO'] + retElems['TMGO']:
+            exGO = self.go.getID(goID)
+
+            retElems['GOTERMS'][goID] = exGO.name
+
+        return retElems
+
+    def goNotIncluded(self, goID, retElems):
+
+        if goID in retElems['GO']:
+            return False
+
+        if goID in retElems['TMGO']:
+            return False
+
+        for exGoID in retElems['GO'] + retElems['TMGO']:
+            exGO = self.go.getID(exGoID)
+
+            if goID in [x.termid for x in exGO.getAllChildren()]:
+                return False
+
+        return True
 
 
 if __name__ == '__main__':

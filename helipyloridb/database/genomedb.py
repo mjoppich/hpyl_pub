@@ -1,8 +1,68 @@
 import glob
+import json
 import os
 from collections import defaultdict
 
 from Bio import SeqIO
+from Bio.Seq import Seq
+
+from utils import fileLocation
+
+class GenomeDBEntry:
+
+    def __init__(self, organismID, organismName, recordID, entryID, seqAA, seqNT, genomicStart, genomicEnd, genomicStrand):
+        self.organismID = organismID
+        self.organismName = organismName
+        self.recordID = recordID
+        self.entryID = entryID
+        self.seqAA = str(seqAA)
+        self.seqNT = str(seqNT)
+        self.genomicStart = int(genomicStart)
+        self.genomicEnd = int(genomicEnd)
+        self.genomicStrand = genomicStrand
+
+    def __str__(self):
+
+        return "\t".join( [str(x) for x in [ self.organismID,
+                            self.organismName,
+                            self.recordID,
+                            self.entryID,
+                            self.seqAA,
+                            self.seqNT,
+                            self.genomicStart,
+                            self.genomicEnd,
+                            self.genomicStrand
+                            ]] )
+
+    def toJSON(self):
+
+        retDict = {}
+
+        for x in self.__dict__:
+            retDict[x] = self.__dict__[x]
+
+        return retDict
+
+    @classmethod
+    def fromLine(cls, line):
+
+        aline = line.strip().split('\t')
+        idx2content = defaultdict(lambda: None)
+
+        for idx, con in enumerate(aline):
+            idx2content[idx] = con
+
+        return GenomeDBEntry(
+            idx2content[0],
+            idx2content[1],
+            idx2content[2],
+            idx2content[3],
+            idx2content[4],
+            idx2content[5],
+            idx2content[6],
+            idx2content[7],
+            idx2content[8]
+        )
 
 
 class GenomeDB:
@@ -35,7 +95,7 @@ class GenomeDB:
 
         return genomeID
 
-    def loadGenome(self, file):
+    def loadGenome(self, file, force=False):
 
 
         if not os.path.isfile(file):
@@ -51,26 +111,15 @@ class GenomeDB:
                     raise ValueError("Not an available genome:", file)
 
 
-        if os.path.isfile(file + "e"):
+        if force==False and os.path.isfile(file + "e"):
 
             genomeID = self._get_genome_id(file)
 
             with open(file + "e", 'r') as infile:
 
-                alllines = infile.readlines()
-
-                for i in range(0, len(alllines), 2):
-
-                    idpart = alllines[i]
-                    seqpart = alllines[i+1]
-
-                    if idpart.startswith(">"):
-                        idpart = idpart[1:]
-
-                    idpart = idpart.strip()
-                    seqpart = seqpart.strip()
-
-                    self.genomes[genomeID][idpart] = seqpart
+                for line in infile:
+                    genomeEntry = GenomeDBEntry.fromLine(line)
+                    self.genomes[genomeID][genomeEntry.entryID] = genomeEntry
 
             return
 
@@ -90,12 +139,13 @@ class GenomeDB:
                     if feature.type.upper() == 'SOURCE':
                         mainFeature = feature
 
-                    if not feature.type.upper() in ['CDS', 'GENE']:
+                    if not feature.type.upper() in ['GENE']:
                         continue
 
                     locTag = feature.qualifiers.get('locus_tag', [None])[0]
                     proID = feature.qualifiers.get('protein_id', [None])[0]
                     translation = feature.qualifiers.get('translation', [None])[0]
+                    ntSeq = feature.location.extract(gb_record).seq
 
                     productID = locTag if locTag != None else proID
 
@@ -107,7 +157,7 @@ class GenomeDB:
                     if translation == None:
 
                         if feature.type.upper() == 'GENE' and mainFeature != None:
-                            ntSeq = feature.location.extract(gb_record).seq
+                            ntSeq = feature.location.extract(gb_record).seq # TODO is this already RC on - ?
 
                             modLen = len(ntSeq) % 3
 
@@ -131,10 +181,11 @@ class GenomeDB:
                                                     longest = pro
                                                     longestStart = startpos
 
-                                                startpos += len(pro) * 3 + 1
+                                                startpos += len(pro) * 3 + 3
 
                                             if (len(longest) > 15) and (frame == 0 or frame == modLen):
-                                                foundORFs[productID + "_" + str(frame)] = str(longest)
+                                                testSeq = nuc[longestStart:longestStart+3*len(str(longest))]
+                                                foundORFs[productID + "_" + str(frame)] = (str(longest), longestStart, longestStart + 3*len(str(longest)))
 
                                                 # print(nuc[frame:frame + length].translate(11))
                                                 # print("%s: %s...%s - length %i, start %i, end %i, strand %i, frame %i" % (productID, longest[:30], longest[-10:], len(longest), longestStart, longestStart+len(longest)*3, strand, frame))
@@ -144,7 +195,35 @@ class GenomeDB:
                                 foundORFs = findAllOrfs(ntSeq)
 
                                 for partProd in foundORFs:
-                                    self.genomes[genomeID][partProd] = foundORFs[partProd]
+
+                                    partProdData = foundORFs[partProd]
+
+                                    gstart = feature.location.start
+
+                                    if feature.location.strand == '-1':
+                                        gstart -= partProdData[1]
+                                        gend = gstart- partProdData[2]
+
+                                    else:
+                                        gstart = feature.location.start + partProdData[1]
+                                        gend = gstart + partProdData[2]
+
+
+                                    subNtSeq = ntSeq[gstart:gend]
+
+                                    partEntry = GenomeDBEntry(
+                                        organismID=genomeID,
+                                        organismName=", ".join(mainFeature.qualifiers['organism']),
+                                        recordID=gb_record.id,
+                                        entryID=partProd,
+                                        seqAA=partProdData[0],
+                                        seqNT=subNtSeq,
+                                        genomicStart=gstart,
+                                        genomicEnd=gend,
+                                        genomicStrand=feature.location.strand
+                                    )
+
+                                    self.genomes[genomeID][partProd] = partEntry
 
                                 continue
 
@@ -154,29 +233,53 @@ class GenomeDB:
                         print("No Translation found for " + productID + " in genome " + genomeID)
                         continue
 
-                    self.genomes[genomeID][productID] = translation
+                    transAA = Seq(str(ntSeq)).translate()
+
+                    if str(transAA) != translation:
+                        print("error in translation")
+                        print(productID)
+                        print(str(transAA))
+                        print(translation)
+                        print()
+
+                    entry = GenomeDBEntry(
+                        organismID=genomeID,
+                        organismName=", ".join(mainFeature.qualifiers['organism']),
+                        recordID=gb_record.id,
+                        entryID=productID,
+                        seqAA=translation,
+                        seqNT=ntSeq,
+                        genomicStart=feature.location.start,
+                        genomicEnd=feature.location.end,
+                        genomicStrand=feature.location.strand
+                    )
+
+
+                    self.genomes[genomeID][productID] = entry
 
             for prodID in self.genomes[genomeID]:
-                translation = self.genomes[genomeID][prodID]
+                genomicEntry = self.genomes[genomeID][prodID]
 
-                if translation == None:
+                if genomicEntry == None:
                     print("No Translation for " + prodID + " in genome " + genomeID)
                     continue
 
-                outfile.write(">" + str(prodID) + "\n" + translation + "\n")
+                outfile.write( str(genomicEntry) +"\n" )
 
 
             print("Loaded Genome: " + file)
 
     def get_sequence(self, genome, productID):
-        return self.genomes.get(genome, {}).get(productID, None)
+        genElem = self.genomes.get(genome, {}).get(productID, None)
+
+        return None if genElem == None else genElem.seqAA
 
     def writeBLASTfastas(self, outpath):
 
         for genome in self.genomes:
             with open(outpath + "/" + genome + ".fa", 'w') as outfile:
                 for seqid in self.genomes[genome]:
-                    protSeq = self.genomes[genome][seqid]
+                    protSeq = self.genomes[genome][seqid].seqAA
 
                     outfile.write(">" + seqid + " " + genome + "\n")
                     outfile.write(protSeq + "\n")
@@ -187,7 +290,7 @@ class GenomeDB:
 
             for genome in self.genomes:
                 for seqid in self.genomes[genome]:
-                    protSeq = self.genomes[genome][seqid]
+                    protSeq = self.genomes[genome][seqid].seqAA
                     allelems = [genome, seqid, len(protSeq), protSeq]
 
                     allelems = [str(x).strip() for x in allelems]
@@ -200,3 +303,20 @@ class GenomeDB:
             return default
 
         return [x for x in self.genomes[orgname]]
+
+    def get_element(self, genome, productID):
+        genElem = self.genomes.get(genome, {}).get(productID, None)
+
+        return None if genElem == None else genElem
+
+if __name__ == '__main__':
+
+    genomDB = GenomeDB(fileLocation + "/genomes/")
+    genomDB.loadGenome('AE000511', force=True)
+
+    res = genomDB.get_element('AE000511', 'HP_1474')
+
+    print(res)
+    print(res.toJSON())
+
+    print(json.dumps(res.toJSON(), indent=4, sort_keys=True))

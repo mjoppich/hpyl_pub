@@ -13,6 +13,8 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Align import MultipleSeqAlignment
 
+from database.OperonDB import OperonDB
+from database.TSSDB import TSSDB
 from database.XRefDatabase import XRefDatabase
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase
@@ -39,6 +41,9 @@ def allowed_file(filename):
 homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp12_hp")
 genomDB = GenomeDB(fileLocation + "/genomes", loadAll=False)
 xrefDB = XRefDatabase()
+opDB = OperonDB.from_cs_operons()
+tssDB = TSSDB.from_cs_tss()
+
 
 for orgname in homDB.get_all_organisms():
     genomDB.loadGenome(orgname)
@@ -169,10 +174,15 @@ def returnAlignments(homIDs, alignOrgs):
 
 
             seqRecords = []
+            seqID2Element = {}
             for org, seqid in alignSeqs:
 
                 genSeq = genomDB.get_sequence(org, seqid)
-                seq = SeqRecord(Seq(genSeq, generic_dna), id="_".join([org, seqid]))
+
+                seqRecID = "_".join([org, seqid])
+
+                seqID2Element[seqRecID] = genomDB.get_element(org, seqid)
+                seq = SeqRecord(Seq(genSeq, generic_dna), id=seqRecID, description="")
 
                 seqRecords.append(seq)
 
@@ -197,13 +207,65 @@ def returnAlignments(homIDs, alignOrgs):
 
                 ida = seqr.id.split('_', 1)
 
+                if ida[0] == 'AE000511':
+
+                    if opDB.find_gene(ida[1], None) != None:
+
+                        inOperons = opDB.find_gene(ida[1])
+
+                        if not 'OPERONS' in jsonResult:
+                            jsonResult['OPERONS'] = []
+
+                        for operon in inOperons:
+                            jsonResult['OPERONS'].append( opDB.get_operon_infos(operon) )
+
+                    if tssDB.find_gene(ida[1], None) != None:
+
+                        inTSS = tssDB.find_gene(ida[1])
+
+                        if not 'TSS' in jsonResult:
+                            jsonResult['TSS'] = []
+
+                        for tssid in inTSS:
+                            jsonResult['TSS'].append( tssDB.get_tss_infos(tssid))
+
+
+                genomeEntry = seqID2Element[seqr.id].toJSON().copy()
                 foundXRefs = xrefDB.make_infos(ida[1])
 
-                clusterMSA.append( {'org': ida[0], 'seqid': ida[1], 'alignment': str(seqr.seq), 'xrefs': foundXRefs} )
+                genomeEntry['alignment'] = str(seqr.seq)
+
+                genomeEntry['alignmentNT'] = makeNTCoAlign(seqr.seq, genomeEntry)
+                genomeEntry['xrefs'] = foundXRefs
+
+                clusterMSA.append( genomeEntry)#{'org': ida[0], 'seqid': ida[1], 'alignment': str(seqr.seq), 'xrefs': foundXRefs} )
 
             jsonResult[refID].append({'msa': clusterMSA, 'homid': homID})
 
     return app.make_response((jsonify( jsonResult ), 200, None))
+
+def makeNTCoAlign(alignAA, genEntry):
+
+    ntseq = genEntry['seqNT']
+
+    usedCodons = []
+    for istart in range(0, len(ntseq), 3):
+        usedCodons.append(ntseq[istart:istart+3])
+
+    alignmentNT = ""
+    alignmentAA = ""
+    seqPos = 0
+
+    for seqChar in str(alignAA):
+        if seqChar == '-':
+            alignmentNT += "---"
+            alignmentAA += "---"
+        else:
+            alignmentNT += usedCodons[seqPos]
+            alignmentAA += seqChar + "--"
+            seqPos += 1
+
+    return (alignmentNT, alignmentAA)
 
 
 
