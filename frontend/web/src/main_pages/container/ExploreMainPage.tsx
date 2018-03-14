@@ -89,38 +89,26 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
                 for (var hi = 0; hi < this.state.alignments[key].length; ++hi)
                 {
                     var homCluster = this.state.alignments[key][hi];
-                    console.log("HOMCLUSTER");
-                    console.log(homCluster);
-                    
-                    var homClusterAlign = {'id': homCluster['homid'], 'align': []}
-                    
-                    for (var si=0; si < homCluster['msa'].length; ++si)
-                    {
-                        var seq = homCluster['msa'][si];
-                        //var name = seq['org'] + " " + seq['seqid'];
 
-                        homClusterAlign.align.push(seq)
-                    }
                     console.log("HOMALIGN");
-                    console.log(homClusterAlign);
-                    alignResults.push( <MSATableViewer key={alignResults.length} alignments={homClusterAlign}/> )
+                    console.log(homCluster);
+                    alignResults.push( <MSATableViewer key={alignResults.length} alignments={homCluster}/> )
                 }
 
             }
         }
 
-        return (
-
-            <Card>
+        return (<Card style={{marginBottom: "20px"}}>
                 <CardHeader
-                title="Show Homologies"
-                subtitle=""
+                title="Search Homology Entries"
+                subtitle="Search by Gene/Protein ID"
                 />
                 <CardText>
 
                     <div>
                         <ACInput onElementSelected={this.newElementSelected.bind(this)} />
                         <SelectedElements elements={this.state.selectedElements} onElementClicked={this.elementClicked.bind(this)} onElementDelete={this.deleteElement.bind(this)}/>
+                        <FlatButton label="Query specified Elements" onClick={() => this.prepareResults()}/>
                     </div>
 
                     <div>
@@ -128,13 +116,7 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
                     </div>
 
                 </CardText>
-
-                <CardActions>
-                    <FlatButton label="Query specified Elements" onClick={() => this.prepareResults()}/>
-                </CardActions>
-            </Card>
-
-        );
+            </Card>);
     }
 };
 
@@ -187,12 +169,12 @@ export class ExploreMainPage extends React.Component<ExplorePageProps, ExplorePa
 
         return (
 
-            <Paper>
+            <div>
 
-                <Card>
+                <Card style={{marginBottom: "20px"}}>
                     <CardHeader
-                    title="Without Avatar"
-                    subtitle="Subtitle"
+                    title="Create Query"
+                    subtitle="Manage your queries"
                     actAsExpander={true}
                     showExpandableButton={true}
                     />
@@ -211,7 +193,7 @@ export class ExploreMainPage extends React.Component<ExplorePageProps, ExplorePa
                 {this.allQueries}
                 </div>
 
-            </Paper>
+            </div>
 
         );
     }

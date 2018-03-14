@@ -203,6 +203,10 @@ def returnAlignments(homIDs, alignOrgs):
 
 
             clusterMSA = []
+
+            tssList = set()
+            operonsList = set()
+
             for seqr in alignment:
 
                 ida = seqr.id.split('_', 1)
@@ -213,21 +217,15 @@ def returnAlignments(homIDs, alignOrgs):
 
                         inOperons = opDB.find_gene(ida[1])
 
-                        if not 'OPERONS' in jsonResult:
-                            jsonResult['OPERONS'] = []
-
                         for operon in inOperons:
-                            jsonResult['OPERONS'].append( opDB.get_operon_infos(operon) )
+                            operonsList.add( operon )
 
                     if tssDB.find_gene(ida[1], None) != None:
 
                         inTSS = tssDB.find_gene(ida[1])
 
-                        if not 'TSS' in jsonResult:
-                            jsonResult['TSS'] = []
-
                         for tssid in inTSS:
-                            jsonResult['TSS'].append( tssDB.get_tss_infos(tssid))
+                            tssList.add(tssid)
 
 
                 genomeEntry = seqID2Element[seqr.id].toJSON().copy()
@@ -240,7 +238,15 @@ def returnAlignments(homIDs, alignOrgs):
 
                 clusterMSA.append( genomeEntry)#{'org': ida[0], 'seqid': ida[1], 'alignment': str(seqr.seq), 'xrefs': foundXRefs} )
 
-            jsonResult[refID].append({'msa': clusterMSA, 'homid': homID})
+            operonsInfo = []
+            for operon in operonsList:
+                operonsInfo.append(opDB.get_operon_infos(operon))
+
+            tssInfo = []
+            for tssid in tssList:
+                tssInfo.append(tssDB.get_tss_infos(tssid))
+
+            jsonResult[refID].append({'msa': clusterMSA, 'homid': homID, 'TSS': tssInfo, 'OPERONS': operonsInfo})
 
     return app.make_response((jsonify( jsonResult ), 200, None))
 

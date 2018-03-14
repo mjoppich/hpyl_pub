@@ -1,6 +1,7 @@
 import * as React from "react"; 
 import FlatButton  from 'material-ui/FlatButton';
 import DownloadArchive from 'material-ui/svg-icons/content/archive';
+import Toggle from 'material-ui/Toggle';
 
 export interface DownloadButtonProps { filename: string, getDownloadContent: any }
 
@@ -43,8 +44,10 @@ class DownloadButton extends React.Component<DownloadButtonProps, {}> {
 }
 
 export interface MSATAbleViewerProps { alignments: any }
+export interface MSATAbleViewerState { showAAAlign: boolean, showNTAlign:boolean }
 
-export default class MSATableViewer extends React.Component<MSATAbleViewerProps, {}> {
+
+export default class MSATableViewer extends React.Component<MSATAbleViewerProps, MSATAbleViewerState> {
 
     xrefcaptions: any;
     goNS2Name: any;
@@ -83,8 +86,19 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
     {
     }
 
+    componentWillMount()
+    {
+        this.setState({showAAAlign: true, showNTAlign: false});
+    }
+
     makeGOLinks( rowAlign, idCat )
     {
+
+        if (!(idCat in rowAlign.xrefs))
+        {
+            return <div></div>;
+        }
+
         var allGOClasses = Object.keys(rowAlign.xrefs[idCat])
 
         console.log("all GO Classes");
@@ -96,7 +110,7 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
 
         var elemsByNamespace = allGOClasses.map((namespaceID, nsi) => 
             <div key={nsi}>
-                <h3>{self.getGONS2Name(namespaceID, namespaceID)}</h3>
+                <h3 style={{margin: 0}}>{self.getGONS2Name(namespaceID, namespaceID)}</h3>
                 {rowAlign.xrefs[idCat][namespaceID].map(
                     (x, i) => 
                                 <div key={i}>
@@ -113,9 +127,9 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
     printMSA()
     {
         var outStr = "";
-        for (var i = 0; i < this.props.alignments.align.length; ++i)
+        for (var i = 0; i < this.props.alignments.msa.length; ++i)
         {
-            var rowAlign = this.props.alignments.align[i];
+            var rowAlign = this.props.alignments.msa[i];
 
             var rowID = rowAlign.entryID;
             var alignSeq = rowAlign.alignment;
@@ -129,9 +143,9 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
     printSeq( seqid )
     {
         var outStr = "";
-        for (var i = 0; i < this.props.alignments.align.length; ++i)
+        for (var i = 0; i < this.props.alignments.msa.length; ++i)
         {
-            var rowAlign = this.props.alignments.align[i];
+            var rowAlign = this.props.alignments.msa[i];
 
             var rowID = rowAlign.entryID;
             var alignSeq = rowAlign.alignment;
@@ -165,10 +179,142 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
 
         var posInfo = recID + " " + recStart + "-" + recEnd + ":" + recStrand;
 
-        return <div><p>{rowAlign.entryID}</p><DownloadButton filename={thisRowID + ".fa"} getDownloadContent={() => this.printSeq(thisRowID)}/><p>{posInfo}</p></div>
+        return <div><p style={{margin: 0}}>{rowAlign.entryID}</p><DownloadButton filename={thisRowID + ".fa"} getDownloadContent={() => this.printSeq(thisRowID)}/><p>{posInfo}</p></div>
+    }
+
+    makeTSSTable(tss)
+    {
+        tss = tss.sort(function(a, b) {
+            return a.TSSID > b.TSSID;
+        })
+
+        /*
+
+            {
+                "LOCUSTAG": "HP_1523",
+                "PROPS": [
+                    "secondary",
+                    "enriched"
+                ],
+                "SEQ": "GGCTTTTTCATCTTCTTCTTCATGCTCAATTTTTCTTATATCATTATTCGC",
+                "STRAND": "-",
+                "TSS": 1604179,
+                "TSSID": "TSS2401"
+            }
+        */
+
+        var tssStuff = [];
+        for (var i = 0; i < tss.length; ++i)
+        {
+            var tssElem = tss[i];
+
+            tssStuff.push(
+                <tr key={i}>
+                    <td style={{verticalAlign: 'top'}}>{tssElem.TSSID}</td>
+                    <td style={{verticalAlign: 'top'}}>{tssElem.LOCUSTAG}</td>
+                    <td style={{verticalAlign: 'top'}}>{tssElem.TSS}</td>
+                    <td style={{verticalAlign: 'top'}}>{tssElem.STRAND}</td>
+                    <td style={{verticalAlign: 'top'}}>{tssElem.PROPS.join(', ')}</td>
+                    <td style={{verticalAlign: 'top'}}><pre>{tssElem.SEQ}</pre></td>
+                </tr>
+            );
+        }
+
+        return <table style={{ tableLayout: "fixed", width: "100%"}}>
+                <tbody>
+                    <tr style={{textAlign: 'left'}}>
+                        <th>TSS-ID</th>
+                        <th>Locus-Tag</th>
+                        <th>TSS</th>
+                        <th>Strand</th>
+                        <th>Properties</th>
+                        <th>Sequence -50 nt upstream + TSS (51nt)</th>
+                    </tr>
+                    {tssStuff}
+                </tbody>
+            </table>;
+    }
+
+    makeOperonsTable(operons)
+    {
+        var opInfo = operons;
+
+        // sort operons
+        opInfo = opInfo.sort(function(a, b) {
+            return a.OPERONID > b.OPERONID;
+        })
+
+        /*
+
+        {
+                "DOOR": [],
+                "GENES": [
+                    "HP_1519",
+                    "HP_1520",
+                    "HP_1521",
+                    "HP_1522",
+                    "HP_1523"
+                ],
+                "OPERONID": "OPERON505",
+                "comment": "",
+                "evaluation": "new",
+                "strand": "-"
+        }
+
+        */
+
+        var opStuff = [];
+        for (var i = 0; i < opInfo.length; ++i)
+        {
+            var opElem = opInfo[i];
+
+            opStuff.push(
+                <tr key={i}>
+                    <td style={{verticalAlign: 'top'}}>{opElem.OPERONID}</td>
+                    <td style={{verticalAlign: 'top'}}>{opElem.GENES.map((x, i) => x).join(", ")}</td>
+                    <td style={{verticalAlign: 'top'}}>{opElem.strand}</td>
+                    <td style={{verticalAlign: 'top'}}>{opElem.evaluation}</td>
+                    <td style={{verticalAlign: 'top'}}>{opElem.comment}</td>
+                    <td style={{verticalAlign: 'top'}}>{opElem.DOOR}</td>
+                </tr>
+            );
+        }
+
+        return <table style={{ tableLayout: "fixed", width: "100%"}}>
+                <tbody>
+                    <tr style={{textAlign: 'left'}}>
+                        <th>OperonID</th>
+                        <th>Genes</th>
+                        <th>Strand</th>
+                        <th>Evaluation</th>
+                        <th>Comment</th>
+                        <th>DOOR ID</th>
+                    </tr>
+                    {opStuff}
+                </tbody>
+            </table>;
     }
 
     render() {
+
+        var TSSinfo = <p>No TSS Info available</p>;
+        var operonInfo = <p>No Operon Info available</p>;
+
+        if (this.props.alignments.TSS)
+        {
+            var tssStuff = this.makeTSSTable(this.props.alignments.TSS);
+
+            TSSinfo = <div>{tssStuff}</div>;
+        }
+
+        if (this.props.alignments.OPERONS)
+        {
+            var opStuff = this.makeOperonsTable(this.props.alignments.OPERONS);
+
+            operonInfo = <div>{opStuff}</div>;
+        }
+
+
 
         var allRows = []
         var allXrefs = []
@@ -185,14 +331,35 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
         <th>{this.xrefcaptions.Interpro}</th>
         </tr>)
 
-        for (var i = 0; i < this.props.alignments.align.length; ++i)
+        for (var i = 0; i < this.props.alignments.msa.length; ++i)
         {
-            var rowAlign = this.props.alignments.align[i];
+            var rowAlign = this.props.alignments.msa[i];
 
+            var aaSEQPart = <pre style={{display: "none"}}></pre>;
+            var ntSEQPart = <pre style={{display: "none"}}></pre>;
+
+            if (this.state.showAAAlign)
+            {
+                aaSEQPart = <pre style={{margin: "0"}}>{rowAlign.alignment}</pre>;
+            }
+            if (this.state.showNTAlign)
+            {
+                ntSEQPart = <pre style={{margin: "0"}}>{rowAlign.alignmentNT[0]}</pre>;
+
+                if (this.state.showAAAlign)
+                {
+                    aaSEQPart = <pre style={{margin: "0"}}>{rowAlign.alignmentNT[1]}</pre>;
+                }
+
+            }
+            
             allRows.push(
             <tr key={i}>
                 <th style={{ position:"absolute", left:0, width: "100px", verticalAlign: "top", borderTop: "1px solid #ccc"}}>{rowAlign.entryID}</th>
-                <td style={{ background:"yellow", verticalAlign: "top", borderTop: "1px solid #ccc"}}><pre style={{margin: "0"}}>{rowAlign.alignment}</pre></td>
+                <td style={{ background:"#e7e7d7", verticalAlign: "top", borderTop: "1px solid #ccc"}}>
+                {aaSEQPart}
+                {ntSEQPart}
+                </td>
             </tr>
             );
 
@@ -213,7 +380,7 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
 
 
             allXrefs.push(<tr key={allXrefs.length}>
-                <td style={{verticalAlign: 'top'}} ><p>{rowAlign.organismName}</p><p>{rowAlign.organismID}</p></td>
+                <td style={{verticalAlign: 'top'}} ><p style={{margin: 0}}>{rowAlign.organismName}</p><p>{rowAlign.organismID}</p></td>
                 <td style={{verticalAlign: 'top'}}>{this.makeProtIDInfo(rowAlign)}</td>
                 <td style={{verticalAlign: 'top'}}>{rowAlign.xrefs['Uniprot'].map((x, i) => <div key={i}><a href={"http://www.uniprot.org/uniprot/"+x}>{x}</a><br/></div>)}</td>
 
@@ -229,10 +396,24 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
 
         return (
             <div>
-            <h1>{this.props.alignments.id}
-            <DownloadButton filename={this.props.alignments.id + ".fa"} getDownloadContent={() => this.printMSA()}/>
-
+            <h1>{this.props.alignments.homid}
+            <DownloadButton filename={this.props.alignments.homid + ".fa"} getDownloadContent={() => this.printMSA()}/>
                 </h1>
+            <div>
+            <Toggle
+                label="Show AA Sequence"
+                defaultToggled={true}
+                toggled={this.state.showAAAlign}
+                onToggle={(event, newValue) => this.setState({showAAAlign: newValue || (!newValue && !this.state.showNTAlign)})}
+                />
+            <Toggle
+                label="Show NT Sequence"
+                defaultToggled={false}
+                toggled={this.state.showNTAlign}
+                onToggle={(event, newValue) => this.setState({showAAAlign: this.state.showAAAlign || (!this.state.showAAAlign && !newValue), showNTAlign: newValue})}
+
+/>
+            </div>
             <div style={{position:"relative"}}>
                 <div style={{overflowX:"scroll", overflowY:"visible", width:"90%", marginLeft:"110px"}}>
                     <table style={{ tableLayout: "auto", width: "100%"}}><tbody>
@@ -247,6 +428,11 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
                         {allXrefs}
                         </tbody>
                     </table>
+
+            <h3>Operon Information</h3>
+            {operonInfo}
+            <h3>Transcription Start Sites</h3>
+            {TSSinfo}
             </div>
         </div>);
     }

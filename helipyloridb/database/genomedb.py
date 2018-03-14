@@ -10,7 +10,7 @@ from utils import fileLocation
 
 class GenomeDBEntry:
 
-    def __init__(self, organismID, organismName, recordID, entryID, seqAA, seqNT, genomicStart, genomicEnd, genomicStrand):
+    def __init__(self, organismID, organismName, recordID, entryID, seqAA, seqNT, genomicStart, genomicEnd, genomicStrand, entryNames):
         self.organismID = organismID
         self.organismName = organismName
         self.recordID = recordID
@@ -20,6 +20,7 @@ class GenomeDBEntry:
         self.genomicStart = int(genomicStart)
         self.genomicEnd = int(genomicEnd)
         self.genomicStrand = genomicStrand
+        self.entryNames = entryNames
 
     def __str__(self):
 
@@ -31,7 +32,8 @@ class GenomeDBEntry:
                             self.seqNT,
                             self.genomicStart,
                             self.genomicEnd,
-                            self.genomicStrand
+                            self.genomicStrand,
+                            self.entryNames
                             ]] )
 
     def toJSON(self):
@@ -61,7 +63,8 @@ class GenomeDBEntry:
             idx2content[5],
             idx2content[6],
             idx2content[7],
-            idx2content[8]
+            idx2content[8],
+            eval(idx2content[9])
         )
 
 
@@ -123,7 +126,20 @@ class GenomeDB:
 
             return
 
+        def makeEntryNames(feature):
 
+            allnotes = feature.qualifiers.get('note', [])
+
+            noteInfo = set()
+            for x in allnotes:
+                notes = x.split('; ')
+
+                for note in notes:
+                    noteInfo.add(note)
+
+            noteInfo = list(noteInfo)
+
+            return [x for x in [feature.qualifiers.get('locus_tag', [None])[0], feature.qualifiers.get('product', [None])[0]] + noteInfo if x != None]
 
         gbParser = SeqIO.parse(file, self.fileFormat)
 
@@ -139,7 +155,7 @@ class GenomeDB:
                     if feature.type.upper() == 'SOURCE':
                         mainFeature = feature
 
-                    if not feature.type.upper() in ['GENE']:
+                    if not feature.type.upper() in ['GENE', 'CDS']:
                         continue
 
                     locTag = feature.qualifiers.get('locus_tag', [None])[0]
@@ -220,7 +236,8 @@ class GenomeDB:
                                         seqNT=subNtSeq,
                                         genomicStart=gstart,
                                         genomicEnd=gend,
-                                        genomicStrand=feature.location.strand
+                                        genomicStrand=feature.location.strand,
+                                        entryNames=makeEntryNames(feature),
                                     )
 
                                     self.genomes[genomeID][partProd] = partEntry
@@ -228,6 +245,8 @@ class GenomeDB:
                                 continue
 
                             translation = str(ntSeq.translate())
+                    else:
+                        translation += "*"
 
                     if translation == None:
                         print("No Translation found for " + productID + " in genome " + genomeID)
@@ -247,6 +266,7 @@ class GenomeDB:
                         organismName=", ".join(mainFeature.qualifiers['organism']),
                         recordID=gb_record.id,
                         entryID=productID,
+                        entryNames=makeEntryNames(feature),
                         seqAA=translation,
                         seqNT=ntSeq,
                         genomicStart=feature.location.start,

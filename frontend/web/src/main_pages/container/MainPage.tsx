@@ -27,7 +27,7 @@ export class WelcomePage extends React.Component<{},{}> {
         return (
 
             <div>
-            <Card>
+            <Card style={{marginBottom: "20px"}}>
                 <CardTitle
                     title="Welcome!"
                     subtitle="heliPyloriBD v0.1"
@@ -41,13 +41,16 @@ export class WelcomePage extends React.Component<{},{}> {
             </Card>
                         <Card>
                         <CardTitle
-                            title="Welcome!"
-                            subtitle="heliPyloriBD v0.1"
+                            title="heliPyloriBD v0.1"
+                            subtitle="Statistics"
                         />
                         <CardText >
-                            <p>heliPyloriDB v.01 online.</p>
-                            <p>Explore the database in the explore tab</p>
-                            <p>Provide some statistics of the project here</p>
+                            
+                            <ul>
+                                <li>The database currently consists of organisms</li>
+                                <li>The database currently consists of organisms</li>
+                                <li>The database currently consists of organisms</li>
+                            </ul>
         
                         </CardText>
                     </Card>
