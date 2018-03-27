@@ -10,9 +10,13 @@ import MSATableViewer from '../components/MSATableViewer';
 
 import axios from 'axios';
 import config from '../config';
+
+import OrganismChipAC from '../components/OrganismChipAC';
+import EntityChipAC from '../components/EntityChipAC';
+
   
 export interface QueryComponentProps { key: number};
-export interface QueryComponentState { selectedElements: Array<any>, alignments: any };
+export interface QueryComponentState { selectedElements: Array<any>, selectedOrganisms: Array<any>, alignments: any };
 
 class QueryComponent extends React.Component<QueryComponentProps, QueryComponentState> {
     constructor(props) {
@@ -25,34 +29,17 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
         this.setState({selectedElements: []});
     }
 
-    newElementSelected( newElement )
-    {
-        this.state.selectedElements.push(newElement);
-        this.setState({selectedElements: this.state.selectedElements});
-    }
-
-    elementClicked( elementText )
-    {
-        console.log("Clicked on: " + elementText)
-    }
-
-    deleteElement( elementText, i )
-    {
-        var idx = this.state.selectedElements.indexOf(elementText);
-
-        if (idx >= 0)
-        {
-            this.state.selectedElements.splice(idx, 1);
-        }
-
-        this.setState({selectedElements: this.state.selectedElements})
-    }
-
     prepareResults()
     {
         var self = this;
 
-        axios.post(config.getRestAddress() + "/clustalign", {genes: this.state.selectedElements}, config.axiosConfig)
+        var allElems = [];
+        for (var i = 0; i < this.state.selectedElements.length; ++i)
+        {
+            allElems.push(this.state.selectedElements[i].name);
+        }
+
+        axios.post(config.getRestAddress() + "/clustalign", {genes: allElems}, config.axiosConfig)
         .then(function (response) {
           console.log(response.data)
 
@@ -65,6 +52,22 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
         });
 
 
+    }
+
+    setSelectedEntities(elems : Array<any>)
+    {
+        console.log("Selected orgs:")
+        console.log(elems)
+
+        this.setState({selectedElements: elems});
+    }
+
+    setSelectedOrganisms(orgs : Array<any>)
+    {
+        console.log("Selected orgs:")
+        console.log(orgs)
+
+        this.setState({selectedOrganisms: orgs});
     }
 
     render()
@@ -106,8 +109,10 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
                 <CardText>
 
                     <div>
-                        <ACInput onElementSelected={this.newElementSelected.bind(this)} />
-                        <SelectedElements elements={this.state.selectedElements} onElementClicked={this.elementClicked.bind(this)} onElementDelete={this.deleteElement.bind(this)}/>
+                        
+                        <EntityChipAC onValueChange={(entities) => this.setSelectedEntities(entities)}/>
+                        <OrganismChipAC onValueChange={(allowedOrgs) => this.setSelectedOrganisms(allowedOrgs)}/>
+
                         <FlatButton label="Query specified Elements" onClick={() => this.prepareResults()}/>
                     </div>
 
@@ -117,6 +122,9 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
 
                 </CardText>
             </Card>);
+
+    //<ACInput onElementSelected={this.newElementSelected.bind(this)} />
+    //<SelectedElements elements={this.state.selectedElements} onElementClicked={this.elementClicked.bind(this)} onElementDelete={this.deleteElement.bind(this)}/>
     }
 };
 

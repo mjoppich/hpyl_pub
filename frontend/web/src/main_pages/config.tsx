@@ -3,7 +3,7 @@
 export default class config {
 
     static restServer = 'http://localhost'
-    static restPort = '5000'
+    static restPort = '5001'
 
     static getRestAddress()
     {

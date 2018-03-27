@@ -14,6 +14,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Align import MultipleSeqAlignment
 
 from database.OperonDB import OperonDB
+from database.SORFDB import SORFDB
 from database.TSSDB import TSSDB
 from database.XRefDatabase import XRefDatabase
 from database.genomedb import GenomeDB
@@ -43,6 +44,7 @@ genomDB = GenomeDB(fileLocation + "/genomes", loadAll=False)
 xrefDB = XRefDatabase()
 opDB = OperonDB.from_cs_operons()
 tssDB = TSSDB.from_cs_tss()
+sorfDB = SORFDB.from_cs_sorfs()
 
 
 for orgname in homDB.get_all_organisms():
@@ -65,6 +67,7 @@ def help():
     res +="</body></html>"
 
     return res, 200, None
+
 
 
 @app.route('/findHomCluster/<geneid>')
@@ -206,6 +209,7 @@ def returnAlignments(homIDs, alignOrgs):
 
             tssList = set()
             operonsList = set()
+            sorfList = set()
 
             for seqr in alignment:
 
@@ -227,6 +231,12 @@ def returnAlignments(homIDs, alignOrgs):
                         for tssid in inTSS:
                             tssList.add(tssid)
 
+                    if sorfDB.find_gene(ida[1], None) != None:
+                        inSORF = sorfDB.find_gene(ida[1])
+
+                        for sorfid in inSORF:
+                            sorfList.add(sorfid)
+
 
                 genomeEntry = seqID2Element[seqr.id].toJSON().copy()
                 foundXRefs = xrefDB.make_infos(ida[1])
@@ -246,7 +256,12 @@ def returnAlignments(homIDs, alignOrgs):
             for tssid in tssList:
                 tssInfo.append(tssDB.get_tss_infos(tssid))
 
-            jsonResult[refID].append({'msa': clusterMSA, 'homid': homID, 'TSS': tssInfo, 'OPERONS': operonsInfo})
+            sorfInfo = []
+            for sorfid in sorfList:
+                sorfInfo.append(sorfDB.get_sorf_infos(sorfid))
+
+
+            jsonResult[refID].append({'msa': clusterMSA, 'homid': homID, 'TSS': tssInfo, 'OPERONS': operonsInfo, 'SORFS': sorfInfo})
 
     return app.make_response((jsonify( jsonResult ), 200, None))
 
@@ -304,7 +319,45 @@ def findID():
             if reMatch.match(protname):
                 jsonResult['proteins'].append(protname)
 
-    return app.make_response((jsonify( jsonResult ), 200, None))
+    allResults = []
+
+    for x in jsonResult:
+        for elem in jsonResult[x]:
+            allResults.append({'name': elem, 'type': x})
+
+    return app.make_response((jsonify( allResults ), 200, None))
+
+@app.route('/orgautocomplete', methods=['GET', 'POST'])
+def orgac():
+
+    searchWords = request.get_json(force=True, silent=True)
+    searchWord = searchWords['search']
+
+    if searchWord == None or len(searchWord) < 3:
+        return app.make_response((jsonify( {} ), 200, None))
+
+    reMatch = re.compile(searchWord)
+
+    allorgs = homDB.get_all_organisms()
+    allorgs = [{'name': x, 'id': x} for x in allorgs if reMatch.match(x)]  # beautify names
+
+    return app.make_response((jsonify( allorgs ), 200, None))
+
+
+@app.route('/defaultorgs', methods=['GET', 'POST'])
+def defaultorgs():
+
+    allorgs = homDB.get_all_organisms()
+    allorgs = [{'name': x, 'id': x} for x in allorgs]  # beautify names
+
+    return app.make_response((jsonify( allorgs ), 200, None))
+
+@app.route('/organisms', methods=['GET', 'POST'])
+def get_organisms():
+    allorgs = homDB.get_all_organisms()
+    allorgs = [{'name': x, 'id': x} for x in allorgs]  # beautify names
+
+    return app.make_response((jsonify(allorgs), 200, None))
 
 
 
@@ -312,4 +365,4 @@ if __name__ == '__main__':
 
    print([rule.rule for rule in app.url_map.iter_rules() if rule.endpoint !='static'])
 
-   app.run(threaded=True)
+   app.run(threaded=True, port=5001)

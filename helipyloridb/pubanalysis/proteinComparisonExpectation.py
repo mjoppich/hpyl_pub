@@ -135,6 +135,9 @@ if __name__ == '__main__':
                 if abs(kdaDiff) > 1000 or (countDiff == 0):
                     continue
 
+                if not (aaCountI == 0 or aaCountJ == 0):
+                    continue
+
                 genesWithDiff.add(orgIT[1])
 
                 pseudoCount = 0.1
@@ -234,6 +237,8 @@ if __name__ == '__main__':
 
     print("Available Orgs:", homolDB.get_all_organisms())
     allOrgs = sorted([x for x in homolDB.get_all_organisms() if x in allowedOrgs])
+    print("Used Orgs:", allOrgs)
+
 
     for org in allOrgs:
         if org in allowedOrgs:

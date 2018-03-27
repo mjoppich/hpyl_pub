@@ -179,7 +179,21 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
 
         var posInfo = recID + " " + recStart + "-" + recEnd + ":" + recStrand;
 
-        return <div><p style={{margin: 0}}>{rowAlign.entryID}</p><DownloadButton filename={thisRowID + ".fa"} getDownloadContent={() => this.printSeq(thisRowID)}/><p>{posInfo}</p></div>
+        var names = [];
+
+        for (var i = 0; i < rowAlign.entryNames.length; ++i)
+        {
+            names.push(<li key={i}>{rowAlign.entryNames[i]}</li>);
+        }
+
+        return <div>
+                    <p style={{margin: 0}}>{rowAlign.entryID}</p>
+                    <DownloadButton filename={thisRowID + ".fa"} getDownloadContent={() => this.printSeq(thisRowID)}/>
+                    <p>{posInfo}</p>
+                    <p>
+                        <ul>{names}</ul>
+                    </p>
+                </div>
     }
 
     makeTSSTable(tss)
@@ -187,6 +201,11 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
         tss = tss.sort(function(a, b) {
             return a.TSSID > b.TSSID;
         })
+
+        if (tss.length == 0)
+        {
+            return <p>No Transcription Start Site Info available</p>;
+        }
 
         /*
 
@@ -214,21 +233,22 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
                     <td style={{verticalAlign: 'top'}}>{tssElem.LOCUSTAG}</td>
                     <td style={{verticalAlign: 'top'}}>{tssElem.TSS}</td>
                     <td style={{verticalAlign: 'top'}}>{tssElem.STRAND}</td>
+                    <td style={{verticalAlign: 'top'}}><pre style={{margin: "0"}}>{tssElem.SEQ}</pre></td>
                     <td style={{verticalAlign: 'top'}}>{tssElem.PROPS.join(', ')}</td>
-                    <td style={{verticalAlign: 'top'}}><pre>{tssElem.SEQ}</pre></td>
+
                 </tr>
             );
         }
 
-        return <table style={{ tableLayout: "fixed", width: "100%"}}>
+        return <table style={{ tableLayout: "auto", width: "100%"}}>
                 <tbody>
                     <tr style={{textAlign: 'left'}}>
                         <th>TSS-ID</th>
                         <th>Locus-Tag</th>
                         <th>TSS</th>
                         <th>Strand</th>
-                        <th>Properties</th>
                         <th>Sequence -50 nt upstream + TSS (51nt)</th>
+                        <th>Properties</th>
                     </tr>
                     {tssStuff}
                 </tbody>
@@ -238,6 +258,11 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
     makeOperonsTable(operons)
     {
         var opInfo = operons;
+
+        if (opInfo.length == 0)
+        {
+            return <p>No Operon Info available</p>;
+        }
 
         // sort operons
         opInfo = opInfo.sort(function(a, b) {
@@ -295,10 +320,81 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
             </table>;
     }
 
+    makeSORFTable(sorfs)
+    {
+        var sorfInfo = sorfs;
+
+        if (sorfInfo.length == 0)
+        {
+            return <p>No small ORF Info available</p>;
+        }
+
+        // sort operons
+        sorfInfo = sorfInfo.sort(function(a, b) {
+            return a.LOCUS_TAG > b.LOCUS_TAG;
+        })
+
+        /*
+
+         {
+                    "LOCUS_TAG": "HP_nc3440",
+                    "PROPS": [
+                        "antisense"
+                    ],
+                    "SORF_ALTNAME": "-",
+                    "SORF_ANTISENSE_LT": "HP_0685",
+                    "SORF_ASSOC_LT": "HP_0685",
+                    "SORF_END": 734351,
+                    "SORF_MAX_3END": "-",
+                    "SORF_NAME": "flagellar biosynthetic protein (fliP) ",
+                    "SORF_SEQ": "TCGGTCAATAAATTAAACCCATCTACCAGAATAAACACTAAAATTTTAAAA",
+                    "SORF_START": 734722,
+                    "SORF_STRAND": "-",
+                    "SORF_TRANSTERM_END": "-",
+                    "SORF_TRANSTERM_TERM": "-"
+        }
+
+        */
+
+        var sorfStuff = [];
+        for (var i = 0; i < sorfInfo.length; ++i)
+        {
+            var sorfElem = sorfInfo[i];
+
+            sorfStuff.push(
+                <tr key={i}>
+                    <td style={{verticalAlign: 'top'}}>{sorfElem.LOCUS_TAG}<br/>{sorfElem.SORF_ALTNAME}</td>
+                    <td style={{verticalAlign: 'top'}}>{sorfElem.SORF_ASSOC_LT}<br/>{sorfElem.SORF_ANTISENSE_LT}</td>
+                    <td style={{verticalAlign: 'top'}}>{sorfElem.SORF_START}-{sorfElem.SORF_END}:{sorfElem.SORF_STRAND}</td>
+                    <td style={{verticalAlign: 'top'}}>{sorfElem.SORF_MAX_3END}</td>
+                    <td style={{verticalAlign: 'top'}}>{sorfElem.SORF_TRANSTERM_END} {sorfElem.SORF_TRANSTERM_TERM}</td>
+                    <td style={{verticalAlign: 'top'}}><samp style={{margin: "0"}}>{sorfElem.SORF_SEQ}</samp><br/>{sorfElem.SORF_NAME}</td>
+                    <td style={{verticalAlign: 'top'}}>{sorfElem.PROPS.map((x, i) => x).join(", ")}</td>
+                </tr>
+            );
+        }
+
+        return <table style={{ tableLayout: "unset", width: "100%"}}>
+                <tbody>
+                    <tr style={{textAlign: 'left'}}>
+                        <th>sORF Locus Tag<br/>Alternate Name</th>
+                        <th>sORF Associated Locus Tag<br/>Antisense Locus Tag</th>
+                        <th>Position</th>
+                        <th>Max 3' End</th>
+                        <th>Transterm Info</th>
+                        <th>Properties</th>
+                        <th>Sequence</th>
+                    </tr>
+                    {sorfStuff}
+                </tbody>
+            </table>;
+    }
+
     render() {
 
         var TSSinfo = <p>No TSS Info available</p>;
         var operonInfo = <p>No Operon Info available</p>;
+        var sorfInfo = <p>No small ORF Info available</p>;
 
         if (this.props.alignments.TSS)
         {
@@ -312,6 +408,12 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
             var opStuff = this.makeOperonsTable(this.props.alignments.OPERONS);
 
             operonInfo = <div>{opStuff}</div>;
+        }
+
+        if (this.props.alignments.SORFS)
+        {
+            var sorfStuff = this.makeSORFTable(this.props.alignments.SORFS);
+            sorfInfo = <div>{sorfStuff}</div>;
         }
 
 
@@ -433,6 +535,8 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
             {operonInfo}
             <h3>Transcription Start Sites</h3>
             {TSSinfo}
+            <h3>small ORFs</h3>
+            {sorfInfo}
             </div>
         </div>);
     }
