@@ -39,16 +39,51 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
             allElems.push(this.state.selectedElements[i].name);
         }
 
-        axios.post(config.getRestAddress() + "/clustalign", {genes: allElems}, config.axiosConfig)
-        .then(function (response) {
-          console.log(response.data)
+        var allOrgs = [];
+        for (var i = 0; i < this.state.selectedOrganisms.length; ++i)
+        {
+            allOrgs.push(this.state.selectedOrganisms[i].id)
+        }
 
-          self.setState({alignments: response.data})
+        axios.post(config.getRestAddress() + "/clustalign", {genes: allElems, organisms: allOrgs}, config.axiosConfig)
+        .then(function (response) {
+            console.log(response.data)
+
+            var newAlignments = response.data;
+
+            var alignKeys = Object.keys(newAlignments);         
+            for (var ki=0; ki < alignKeys.length; ++ki)
+            {
+                var key = alignKeys[ki];
+                for (var hi = 0; hi < newAlignments[key].length; ++hi)
+                {
+                    var homCluster = newAlignments[key][hi];
+
+                    homCluster.msa.sort(function(a, b){
+                        var keyA = a.organismID;
+                        var keyB = b.organismID;
+
+                        if ((keyA < keyB) || (keyA == 'AE000511'))
+                        {
+                            return -1;
+                        }
+
+                        if ((keyA > keyB) || (keyB == 'AE000511'))
+                        {
+                            return 1;
+                        }
+
+                        return 0;
+                    });
+                }
+            }
+
+            self.setState({alignments: newAlignments})
 
         })
         .catch(function (error) {
-          console.log(error)
-          self.setState({alignments: {}})
+            console.log(error)
+            self.setState({alignments: {}})
         });
 
 

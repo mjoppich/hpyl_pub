@@ -1,7 +1,9 @@
 import * as React from "react"; 
 import { Card, CardTitle, CardText } from 'material-ui/Card';
+import axios from 'axios';
+import config from '../config';
 
-export class WelcomePage extends React.Component<{},{}> {
+export class WelcomePage extends React.Component<{},{stats: any}> {
 
     /**
      * Class constructor.
@@ -14,8 +16,22 @@ export class WelcomePage extends React.Component<{},{}> {
     /**
      * This method will be executed after initial rendering.
      */
-    componentDidMount() {
+    componentWillMount() {
+        var self=this;
+        self.setState({stats: {}})
 
+        axios.get(config.getRestAddress() + "/stats", config.axiosConfig)
+        .then(function (response) {
+            console.log(response.data)
+
+            var stats = response.data;
+            self.setState({stats: stats})
+
+        })
+        .catch(function (error) {
+            console.log(error)
+            self.setState({stats: {}})
+        });
     }
 
     /**
@@ -23,7 +39,17 @@ export class WelcomePage extends React.Component<{},{}> {
      */
     render() {
 
+        var statElems = <p>No database stats available</p>;
 
+        if (this.state.stats.org_count)
+        {
+            statElems = <ul>
+            <li>The database currently consists of {this.state.stats.org_count} organisms.</li>
+            <li>The database currently includes {this.state.stats.hom_count} simple homologies.</li>
+            <li>The database currently includes {this.state.stats.comb_count} combined homologies.</li>
+            <li>The database currently includes {this.state.stats.mul_comb_count} multiple-combined homologies.</li>
+            </ul>;
+        }
         return (
 
             <div>
@@ -46,11 +72,7 @@ export class WelcomePage extends React.Component<{},{}> {
                         />
                         <CardText >
                             
-                            <ul>
-                                <li>The database currently consists of organisms</li>
-                                <li>The database currently consists of organisms</li>
-                                <li>The database currently consists of organisms</li>
-                            </ul>
+                            {statElems}
         
                         </CardText>
                     </Card>

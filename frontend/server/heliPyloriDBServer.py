@@ -1,12 +1,14 @@
 import re
-import sys
+import sys, os
 from io import StringIO
 
+sys.path.insert(0, str(os.path.dirname(os.path.realpath(__file__))) + "/../../helipyloridb")
+
 from flask import Flask, jsonify, request, redirect, url_for, send_from_directory
-import os
 import json
 import pprint
 from collections import defaultdict
+import requests
 
 from Bio.Alphabet import generic_dna
 from Bio.Seq import Seq
@@ -27,6 +29,8 @@ from Bio import SeqIO, AlignIO
 import subprocess
 from flask_cors import CORS
 
+from amas import AMAS
+
 app = Flask(__name__)
 CORS(app)
 
@@ -39,16 +43,20 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
 
-homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp12_hp")
+#homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp12_hp")
+homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpdb_full")
 genomDB = GenomeDB(fileLocation + "/genomes", loadAll=False)
-xrefDB = XRefDatabase()
+
+for orgname in homDB.get_all_organisms():
+    genomDB.loadGenome(orgname)
+
+xrefDB = XRefDatabase(fileLocation + "/hpdb_full_xref")
 opDB = OperonDB.from_cs_operons()
 tssDB = TSSDB.from_cs_tss()
 sorfDB = SORFDB.from_cs_sorfs()
 
+genomDB.writeBLASTfastas('/mnt/c/Users/mjopp/Desktop/genomdb')
 
-for orgname in homDB.get_all_organisms():
-    genomDB.loadGenome(orgname)
 
 
 @app.route('/test', methods=['GET', 'POST'])
@@ -137,7 +145,7 @@ def getHomClusterAndAlignment():
         gene2homid[geneID] = homDB.findHomologyForGeneID(geneID)
 
 
-    alignOrgs = alignReq['organisms'] if 'organisms' in alignReq else homDB.get_all_organisms()
+    alignOrgs = alignReq['organisms'] if ('organisms' in alignReq and len(alignReq['organisms']) > 0) else homDB.get_all_organisms()
 
     return returnAlignments(gene2homid, alignOrgs)
 
@@ -152,12 +160,15 @@ def getAlignments():
         return app.make_response((jsonify( {'error': 'must include homid'} ), 400, None))
 
     homID = alignReq['homids']
-    alignOrgs = alignReq['organisms'] if 'organisms' in alignReq else homDB.get_all_organisms()
+    alignOrgs = alignReq['organisms'] if ('organisms' in alignReq and len(alignReq['organisms']) > 0) else homDB.get_all_organisms()
 
     return returnAlignments({homID: homID}, alignOrgs)
 
 
 def returnAlignments(homIDs, alignOrgs):
+
+    print("Preparing Alignment for ", homIDs)
+    print("Preparing Alignment for ", alignOrgs)
 
     jsonResult = defaultdict(list)
 
@@ -170,9 +181,7 @@ def returnAlignments(homIDs, alignOrgs):
 
             for org in alignOrgs:
                 if org in homCluster:
-
                     for seqid in homCluster[org]:
-
                         alignSeqs.append( (org, seqid) )
 
 
@@ -195,14 +204,20 @@ def returnAlignments(homIDs, alignOrgs):
 
             inmsa = "./tmps/in.msa"
 
-            clustalomega_cline = ClustalOmegaCommandline(infile=outfasta.name, outfile=inmsa,force=True, outfmt='st', verbose=True, auto=True)
+            clustalomega_cline = ClustalOmegaCommandline(infile=outfasta.name, outfile=inmsa,force=True, outfmt='fa', verbose=True, auto=True)
             print(clustalomega_cline)
+
+            meta_aln = AMAS.MetaAlignment(in_files=[inmsa], data_type='aa', in_format='fasta', cores=1)
+            header, data = meta_aln.get_summaries()
+
+            for x,y in zip(header, data):
+                print(x,y)
 
             output = subprocess.getoutput( [str(clustalomega_cline)] )
 
             alignment = []
             with open(inmsa, 'r') as fin:
-                alignment = AlignIO.read(fin, "stockholm")
+                alignment = AlignIO.read(fin, "fasta")
 
 
             clusterMSA = []
@@ -277,14 +292,21 @@ def makeNTCoAlign(alignAA, genEntry):
     alignmentAA = ""
     seqPos = 0
 
-    for seqChar in str(alignAA):
-        if seqChar == '-':
-            alignmentNT += "---"
-            alignmentAA += "---"
-        else:
-            alignmentNT += usedCodons[seqPos]
-            alignmentAA += seqChar + "--"
-            seqPos += 1
+    try:
+
+        for seqChar in str(alignAA):
+            if seqChar == '-':
+                alignmentNT += "---"
+                alignmentAA += "---"
+            else:
+                alignmentNT += usedCodons[seqPos]
+                alignmentAA += seqChar + "--"
+                seqPos += 1
+
+    except:
+        print("Error in retrieving NT align")
+        print(genEntry)
+        alignmentAA = None
 
     return (alignmentNT, alignmentAA)
 
@@ -311,6 +333,9 @@ def findID():
 
         if reMatch.match(orgname):
             jsonResult['genomes'].append(orgname)
+
+            if len(jsonResult['genomes']) > 100:
+                break
 
     for orgname in homDB.get_all_organisms():
 
@@ -350,6 +375,9 @@ def defaultorgs():
     allorgs = homDB.get_all_organisms()
     allorgs = [{'name': x, 'id': x} for x in allorgs]  # beautify names
 
+    allorgs = [{'name': x, 'id': x} for x in ['AE000511', 'CP001217', 'AE001439']]  # beautify names
+
+
     return app.make_response((jsonify( allorgs ), 200, None))
 
 @app.route('/organisms', methods=['GET', 'POST'])
@@ -359,10 +387,47 @@ def get_organisms():
 
     return app.make_response((jsonify(allorgs), 200, None))
 
+@app.route('/stats', methods=['GET', 'POST'])
+def make_simple_stats():
+    allorgs = homDB.get_all_organisms()
 
+    jsonRes = {
+        'org_count': len(allorgs),
+        'hom_count': len(homDB.get_hom_ids()),
+        'comb_count': len(homDB.get_comb_ids()),
+        'mul_comb_count': len(homDB.get_mulcombs())
+    }
+
+    return app.make_response((jsonify(jsonRes), 200, None))
+    
+    
+@app.route('/swissmodel/query', methods=['POST'])
+def make_swissmodel_query():
+
+    searchWords = request.get_json(force=True, silent=True)
+    
+    print("SWISSMODEL " + str(searchWords))
+
+    if searchWords == None or searchWords.get('uniprot', None) == None:
+        return app.make_response((jsonify( {"error": "no uniprot id given", 'req': searchWords} ), 400, None))
+
+    uniprotIDs = searchWords.get('uniprot')
+
+    retRes = {}
+
+    for uniprotID in uniprotIDs:
+        try:
+            r = requests.get('https://swissmodel.expasy.org/repository/uniprot/'+uniprotID+'.json?provider=swissmodel')
+          
+            if r.status_code == 200:
+                retRes[uniprotID] = r.json()
+   
+        except:
+            pass            
+
+    return app.make_response((jsonify(retRes), 200, None))
 
 if __name__ == '__main__':
 
    print([rule.rule for rule in app.url_map.iter_rules() if rule.endpoint !='static'])
-
    app.run(threaded=True, port=5001)

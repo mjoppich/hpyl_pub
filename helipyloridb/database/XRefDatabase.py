@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+import os
 from nertoolkit.geneontology.GeneOntology import GeneOntology, GOTerm
 from porestat.utils.DataFrame import DataFrame
 
@@ -11,7 +12,6 @@ class XRefDatabase:
     def __init__(self, fileName=fileLocation + "/hpp12_hp_xref"):
 
         self.df = DataFrame.parseFromFile(fileName)
-        self.df_add = DataFrame.parseFromFile(fileName + "_add")
 
         self.infos = {}
         self.add_infos = defaultdict(list)
@@ -29,8 +29,11 @@ class XRefDatabase:
             elemName = row['GeneIdentity.GENE_NAME']
             self.infos[elemName] = row
 
-        for row in self.df_add:
-            self.add_infos[row['XREF']].append(row['GOID'])
+
+        if os.path.exists(fileName + "_add"):
+            self.df_add = DataFrame.parseFromFile(fileName + "_add")
+            for row in self.df_add:
+                self.add_infos[row['XREF']].append(row['GOID'])
 
 
     def get_infos(self, elemName, default=None):
@@ -82,8 +85,6 @@ class XRefDatabase:
         return retElem
 
     def restructureGO(self, retElem):
-
-        print([x for x in retElem])
 
         restructuredGO = {}
         restructuredGO['Uniprot'] = retElem['Uniprot']

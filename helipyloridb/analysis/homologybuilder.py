@@ -104,14 +104,27 @@ class HomologyBuilder:
             self.genomeDB.loadGenome(self.basePath + "/genomes/" + queryGenome + self.genomeInputExtension)
             self.genomeDB.loadGenome(self.basePath + "/genomes/" + subjectGenome + self.genomeInputExtension)
 
-            self.geneDupDB.load_organism(self.basePath + "/alignments/" + queryGenome + "." + queryGenome + ".aliout",
+            dupfiles = [
+                self.basePath + "/alignments/" + queryGenome + "." + queryGenome + ".aliout",
+                self.basePath + "/alignments/" + subjectGenome + "." + subjectGenome + ".aliout"
+            ]
+
+            canContinue = True
+            for x in dupfiles:
+                if not os.path.isfile(x):
+                    print("Not a file", x)
+                    canContinue = False
+
+            if not canContinue:
+                continue
+
+            self.geneDupDB.load_organism(dupfiles[0],
                                          self.genomeDB)
-            self.geneDupDB.load_organism(self.basePath + "/alignments/" + subjectGenome + "." + subjectGenome + ".aliout",
+            self.geneDupDB.load_organism(dupfiles[1],
                                          self.genomeDB)
 
-            print(str(self.geneDupDB))
-
-            print(file)
+            #print(str(self.geneDupDB))
+            #print(file)
 
             with open(file, 'r') as infile:
 

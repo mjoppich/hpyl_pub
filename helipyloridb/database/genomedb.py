@@ -3,6 +3,7 @@ import json
 import os
 from collections import defaultdict
 
+import sys
 from Bio import SeqIO
 from Bio.Seq import Seq
 
@@ -122,7 +123,7 @@ class GenomeDB:
 
                 for line in infile:
                     genomeEntry = GenomeDBEntry.fromLine(line)
-                    self.genomes[genomeID][genomeEntry.entryID] = genomeEntry
+                    self.genomes[genomeEntry.organismID][genomeEntry.entryID] = genomeEntry
 
             return
 
@@ -143,11 +144,19 @@ class GenomeDB:
 
         gbParser = SeqIO.parse(file, self.fileFormat)
 
+        allRecs = [x for x in gbParser]
+
+        fileNameExt = os.path.splitext(os.path.basename(file))
+        genomeID = fileNameExt[0]
+
+        if genomeID != allRecs[0].name:
+            sys.stderr.write("Attention: Reading in " + str(file) + " and record ID "+allRecs[0].name+" does not match filename/genomeID " + genomeID)
+
         with open(file + "e", 'w') as outfile:
 
-            for gb_record in gbParser:
+            for gb_record in allRecs:
 
-                genomeID = gb_record.name
+                #genomeID = gb_record.name
                 mainFeature = None
 
                 for feature in gb_record.features:
@@ -190,18 +199,28 @@ class GenomeDB:
                                             longestStart = 0
 
                                             startpos = frame
+                                            translated = nuc[frame:frame + length].translate(11)
+                                            atranslated = translated.split("*")
+                                            longestIdx = 0
 
-                                            for pro in nuc[frame:frame + length].translate(11).split("*"):
+                                            for idx, pro in enumerate(atranslated):
 
                                                 if len(pro) > len(longest):
                                                     longest = pro
                                                     longestStart = startpos
+                                                    longestIdx = idx
 
                                                 startpos += len(pro) * 3 + 3
 
                                             if (len(longest) > 15) and (frame == 0 or frame == modLen):
                                                 testSeq = nuc[longestStart:longestStart+3*len(str(longest))]
-                                                foundORFs[productID + "_" + str(frame)] = (str(longest), longestStart, longestStart + 3*len(str(longest)))
+
+                                                stopcd = ''
+                                                if longestIdx != len(atranslated)-1 and translated.count('*') > 0:
+                                                    stopcd = '*'
+
+                                                foundORFs[productID + "_" + str(frame)] = (str(longest)+stopcd, longestStart, longestStart + 3*(len(str(longest))+len(stopcd)))
+                                                testSeq=testSeq
 
                                                 # print(nuc[frame:frame + length].translate(11))
                                                 # print("%s: %s...%s - length %i, start %i, end %i, strand %i, frame %i" % (productID, longest[:30], longest[-10:], len(longest), longestStart, longestStart+len(longest)*3, strand, frame))
@@ -224,8 +243,10 @@ class GenomeDB:
                                         gstart = feature.location.start + partProdData[1]
                                         gend = gstart + partProdData[2]
 
+                                    subNtSeq = str(ntSeq[partProdData[1]:partProdData[2]])
 
-                                    subNtSeq = ntSeq[gstart:gend]
+                                    if len(subNtSeq) % 3 != 0:
+                                        print("NT ERR",subNtSeq)
 
                                     partEntry = GenomeDBEntry(
                                         organismID=genomeID,
@@ -254,12 +275,13 @@ class GenomeDB:
 
                     transAA = Seq(str(ntSeq)).translate()
 
-                    if str(transAA) != translation:
+                    if str(transAA) != translation and False:
                         print("error in translation")
                         print(productID)
                         print(str(transAA))
                         print(translation)
                         print()
+
 
                     entry = GenomeDBEntry(
                         organismID=genomeID,
@@ -332,9 +354,9 @@ class GenomeDB:
 if __name__ == '__main__':
 
     genomDB = GenomeDB(fileLocation + "/genomes/")
-    genomDB.loadGenome('AE000511', force=True)
+    genomDB.loadGenome('CP001582', force=True)
 
-    res = genomDB.get_element('AE000511', 'HP_1474')
+    res = genomDB.get_element('CP001582', 'HPV225_0537_0')
 
     print(res)
     print(res.toJSON())

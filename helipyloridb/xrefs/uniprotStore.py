@@ -5,7 +5,7 @@ from porestat.utils.DataFrame import DataFrame, DataRow
 
 from xrefs.GeneIdentity import GeneIdentity
 from xrefs.Store import RESTStore, StoreException, RequestMethod
-
+import json
 
 class UniprotStore(RESTStore):
 
@@ -103,7 +103,7 @@ class UniprotStore(RESTStore):
 
 
 
-    def fetch(self, fromEntity, elements, toEntities = [GeneIdentity.UNIPROT, GeneIdentity.GENE_SYMBOL, GeneIdentity.ORDERED_LOCUS]):
+    def fetch(self, fromEntity, elements, toEntities = [GeneIdentity.UNIPROT, GeneIdentity.GENE_SYMBOL, GeneIdentity.ORDERED_LOCUS], error_on_empty_result=True):
 
         self._must_accept(fromEntity)
         self._must_provide(toEntities)
@@ -113,12 +113,22 @@ class UniprotStore(RESTStore):
         reqParams = self._make_params(fromEntity, elements, toEntities)
 
         for x in reqParams:
-            print(str(x) + " " + str(reqParams[x]))
+
+            lenReqParams = len(reqParams[x])
+
+            if lenReqParams < 100:
+                print(str(x) + " " + str(reqParams[x]))
+            else:
+                print(str(x) + " " + str(lenReqParams) + " elements")
 
         resp = self._request( RequestMethod.POST, "", reqParams)
 
-        if (resp.text == None) or len(resp.text) == 0:
+        if (resp.text == None):
+            print(json.dumps(reqParams))
             raise StoreException("Could not retrieve elements")
+
+        if len(resp.text) == 0 and error_on_empty_result:
+            raise StoreException("Empty result")
 
         convData = DataFrame()
         dfCols = toEntities + [fromEntity]

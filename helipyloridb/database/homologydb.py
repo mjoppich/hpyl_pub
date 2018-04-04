@@ -1,6 +1,5 @@
 import io
 from collections import defaultdict
-
 from utils import mergeDicts
 
 
@@ -105,7 +104,14 @@ class HomologyDatabase:
 
         return foundElems
 
+    def get_hom_ids(self):
+        return [x for x in self.homologies]
 
+    def get_comb_ids(self):
+        return [x for x in self.combinations]
+
+    def get_mulcombs(self):
+        return [x for x in self.multiCombinations]
 
     def findHomologyForGeneID(self, searchID):
 
@@ -158,9 +164,6 @@ class HomologyDatabase:
                 self.homologies[x] = allElems
                 if properties != None:
                     self.homologyProperties[x][ idtuple ] = mergeDicts(self.homologyProperties[x].get(idtuple, None), properties)
-
-                if len(allElems) > 20:
-                    print(x)
 
                 return
 
@@ -276,6 +279,8 @@ class HomologyDatabase:
                 aline = line.strip().split('\t')
 
                 if aline[0].startswith('COMBID'):
+                    homdb.combinations[aline[0]].add( (aline[1], aline[2]) )
+                elif aline[0].startswith('MULCMB'):
                     continue
                 elif aline[0].startswith('HOMID'):
                     homdb.homologies[aline[0]].add( (aline[1], aline[2]) )

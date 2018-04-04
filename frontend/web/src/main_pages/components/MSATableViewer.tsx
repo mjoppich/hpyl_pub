@@ -3,6 +3,8 @@ import FlatButton  from 'material-ui/FlatButton';
 import DownloadArchive from 'material-ui/svg-icons/content/archive';
 import Toggle from 'material-ui/Toggle';
 
+import SwissModelViewer from "./SwissModelViewer";
+
 export interface DownloadButtonProps { filename: string, getDownloadContent: any }
 
 
@@ -320,6 +322,11 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
             </table>;
     }
 
+    makeSwissModelInfo( elems )
+    {
+        return (<SwissModelViewer alignments={elems}/>);
+    }
+
     makeSORFTable(sorfs)
     {
         var sorfInfo = sorfs;
@@ -416,6 +423,7 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
             sorfInfo = <div>{sorfStuff}</div>;
         }
 
+        var swissmodel =  this.makeSwissModelInfo(this.props.alignments);
 
 
         var allRows = []
@@ -526,17 +534,22 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
         </div>
         <div>
             <h3>Cross-References</h3>
-        <table style={{ tableLayout: "fixed", width: "100%"}}><tbody>
-                        {allXrefs}
-                        </tbody>
-                    </table>
+            <table style={{ tableLayout: "fixed", width: "100%"}}><tbody>
+                {allXrefs}
+                </tbody>
+            </table>
 
-            <h3>Operon Information</h3>
+            <h3>Data Integreation</h3>
+            <p>CM Sharma looked into <a href="https://www.nature.com/articles/nature08756">the primary transcriptome of H. pylori</a>. For reference we provide the results from this study here for any homology which involves a Helicobater pylori 26695 gene.</p>
+            <h4>Operon Information</h4>
             {operonInfo}
-            <h3>Transcription Start Sites</h3>
+            <h4>Transcription Start Sites</h4>
             {TSSinfo}
-            <h3>small ORFs</h3>
+            <h4>small ORFs</h4>
             {sorfInfo}
+
+            <h3>SwissModel</h3>
+            {swissmodel}
             </div>
         </div>);
     }

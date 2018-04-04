@@ -13,8 +13,9 @@ export default class config {
     static axiosConfig = {
         crossdomain: true,
         headers: {
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS"
         }
       };
-  
+ 
 }

@@ -50,6 +50,9 @@ class GeneDuplicationDB:
                 subjSeq = orgGenomeDB.get_sequence(genomeID, ret.subject.seqid)
                 querySeq = orgGenomeDB.get_sequence(genomeID, ret.query.seqid)
 
+                if subjSeq == None or querySeq == None:
+                    print("could not find one of the two sequences", genomeID, ret.subject, ret.query)
+
                 partialSQ = (len(subjSeq)/len(querySeq))
                 partialQS = (len(querySeq) / len(subjSeq))
 

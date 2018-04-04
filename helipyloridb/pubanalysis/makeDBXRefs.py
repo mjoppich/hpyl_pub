@@ -3,7 +3,7 @@ from utils import fileLocation
 from xrefs.GeneIdentity import GeneIdentity
 from xrefs.uniprotStore import UniprotStore
 
-hpHomolDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp12_hp")
+hpHomolDB = HomologyDatabase.loadFromFile(fileLocation + "/hpdb_full")
 
 allIDS = []
 
@@ -14,7 +14,26 @@ for org in hpHomolDB.get_all_organisms():
     for x in allOrgElems:
         allIDS.append(x)
 
-up = UniprotStore()
-allConvertedIDs = up.fetch(GeneIdentity.GENE_NAME, allIDS, toEntities=[GeneIdentity.UNIPROT, GeneIdentity.GO_ID, GeneIdentity.PFAM, GeneIdentity.INTERPRO, GeneIdentity.GENE_SYMBOL])
+print("Fetching information for", len(allIDS), "gene ids")
 
-allConvertedIDs.export(fileLocation + "/hpp12_hp_xref")
+
+finalDF = None
+chunksize = 1000
+
+for i in range(0, len(allIDS), chunksize):
+
+    imax = min([i+chunksize, len(allIDS)])
+
+    chunkElems = allIDS[i:imax]
+
+    print(i, imax, len(chunkElems))
+
+    up = UniprotStore()
+    allConvertedIDs = up.fetch(GeneIdentity.GENE_NAME, chunkElems, toEntities=[GeneIdentity.UNIPROT, GeneIdentity.GO_ID, GeneIdentity.PFAM, GeneIdentity.INTERPRO, GeneIdentity.GENE_SYMBOL], error_on_empty_result=False)
+
+    if finalDF == None:
+        finalDF = allConvertedIDs
+    else:
+        finalDF.merge(allConvertedIDs)
+
+finalDF.export(fileLocation + "/hpdb_full_xref")

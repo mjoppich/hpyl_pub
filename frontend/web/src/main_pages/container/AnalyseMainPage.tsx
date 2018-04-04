@@ -29,7 +29,7 @@ export class AnalyseMainPage extends React.Component<{},{}> {
 
             <Card>
                 <CardHeader
-                title="Without Avatar"
+                title="Analysis Results"
                 subtitle="Subtitle"
                 actAsExpander={true}
                 showExpandableButton={true}
