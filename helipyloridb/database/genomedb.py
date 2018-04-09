@@ -326,6 +326,23 @@ class GenomeDB:
                     outfile.write(">" + seqid + " " + genome + "\n")
                     outfile.write(protSeq + "\n")
 
+    def writePFAMfastas(self, outpath):
+
+        for genome in self.genomes:
+            with open(outpath + "/" + genome + ".fa", 'w') as outfile:
+                for seqid in self.genomes[genome]:
+                    protSeq = self.genomes[genome][seqid].seqAA
+
+                    if protSeq[-1] == '*':
+                        protSeq = protSeq[0:-1]
+
+                    if protSeq.count('*') > 0:
+                        print("Remaining stops in seq", seqid)
+                        continue
+
+                    outfile.write(">" + seqid + " " + genome + "\n")
+                    outfile.write(protSeq + "\n")
+
     def writeCSV(self, outpath):
 
         with open(outpath, 'w') as outfile:

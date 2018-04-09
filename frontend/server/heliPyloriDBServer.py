@@ -2,6 +2,8 @@ import re
 import sys, os
 from io import StringIO
 
+from database.PfamResultDB import PfamResultDB
+
 sys.path.insert(0, str(os.path.dirname(os.path.realpath(__file__))) + "/../../helipyloridb")
 
 from flask import Flask, jsonify, request, redirect, url_for, send_from_directory
@@ -54,8 +56,10 @@ xrefDB = XRefDatabase(fileLocation + "/hpdb_full_xref")
 opDB = OperonDB.from_cs_operons()
 tssDB = TSSDB.from_cs_tss()
 sorfDB = SORFDB.from_cs_sorfs()
+pfamDB = PfamResultDB.from_folder()
 
-genomDB.writeBLASTfastas('/mnt/c/Users/mjopp/Desktop/genomdb')
+#genomDB.writeBLASTfastas(fileLocation + "/genomes")
+#genomDB.writePFAMfastas('/mnt/c/Users/mjopp/Desktop/genomdb')
 
 
 
@@ -206,14 +210,13 @@ def returnAlignments(homIDs, alignOrgs):
 
             clustalomega_cline = ClustalOmegaCommandline(infile=outfasta.name, outfile=inmsa,force=True, outfmt='fa', verbose=True, auto=True)
             print(clustalomega_cline)
+            output = subprocess.getoutput( [str(clustalomega_cline)] )
 
             meta_aln = AMAS.MetaAlignment(in_files=[inmsa], data_type='aa', in_format='fasta', cores=1)
             header, data = meta_aln.get_summaries()
 
             for x,y in zip(header, data):
                 print(x,y)
-
-            output = subprocess.getoutput( [str(clustalomega_cline)] )
 
             alignment = []
             with open(inmsa, 'r') as fin:
@@ -225,6 +228,7 @@ def returnAlignments(homIDs, alignOrgs):
             tssList = set()
             operonsList = set()
             sorfList = set()
+            allPfamRes = []
 
             for seqr in alignment:
 
@@ -252,12 +256,18 @@ def returnAlignments(homIDs, alignOrgs):
                         for sorfid in inSORF:
                             sorfList.add(sorfid)
 
+                orgID = ida[0]
+                genID = ida[1]
+
+                pfamResIDs = pfamDB.find_gene(orgID, genID)
+                pfamRes = pfamDB.get_pfam_infos(pfamResIDs)
+
+                allPfamRes += pfamRes
 
                 genomeEntry = seqID2Element[seqr.id].toJSON().copy()
                 foundXRefs = xrefDB.make_infos(ida[1])
 
                 genomeEntry['alignment'] = str(seqr.seq)
-
                 genomeEntry['alignmentNT'] = makeNTCoAlign(seqr.seq, genomeEntry)
                 genomeEntry['xrefs'] = foundXRefs
 
@@ -275,8 +285,12 @@ def returnAlignments(homIDs, alignOrgs):
             for sorfid in sorfList:
                 sorfInfo.append(sorfDB.get_sorf_infos(sorfid))
 
+            for x in allPfamRes:
+                print(x)
 
-            jsonResult[refID].append({'msa': clusterMSA, 'homid': homID, 'TSS': tssInfo, 'OPERONS': operonsInfo, 'SORFS': sorfInfo})
+            jsonResult[refID].append({'msa': clusterMSA, 'homid': homID, 'TSS': tssInfo, 'OPERONS': operonsInfo, 'SORFS': sorfInfo, 'PFAMS': allPfamRes})
+
+    print(jsonResult)
 
     return app.make_response((jsonify( jsonResult ), 200, None))
 

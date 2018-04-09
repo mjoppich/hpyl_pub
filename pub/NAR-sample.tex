@@ -1,5 +1,7 @@
 \documentclass[a4,center,fleqn]{NAR}
 
+\usepackage{todonotes}
+
 % Enter dates of publication
 \copyrightyear{2008}
 \pubdate{31 July 2009}
@@ -11,7 +13,7 @@
 
 \begin{document}
 
-\title{Helicobacter pylori Homology Database: the case of tryptophan}
+\title{H. pylori Homology Database: why special databases are important in bacterial research}
 
 \author{%
 Markus Joppich\,$^{1,*}$,
@@ -52,17 +54,6 @@ Accepted March 1, 2018}
 The idea that similar protein or gene sequences have a higher probability of fulfilling the same or similar function has been the foundation for searches based on alignments, being BLAST the most popular. Although similarity could mean analogous function, the lack of similitude does not exclude it. Alignments can help to discover the function of unknown genes or proteins under the premise that the function of a homologous sequence is already known, as variations of in sequences are considered part of the evolutionary process (reviewed by Pearson WR 2013).\\
 Until 2015 there were genome sequences from 50 bacterial and 11 archaeal phyla available with a total of around 14000 (February 2015, NCBI) (Land M 2015). Today, over three years later,  this number has increase to a total of 133148 (March 15, 2018. NCBI Genome). The rate at which genomes are being published increases the possibility of finding a homologous gene or protein. At the same time, analysis of multiple genomes from different specimens (strains) belonging to same species allow to estimate normal variations of the organisms in ecosystems. However, this data growth rate challenges the ability to analyze it in a coherent manner based on already available information.\\	 
 
-
-\begin{align*}
-&\mathrm{Ascorbate} + \mathrm{EDTA} \cdot \mathrm{Fe}^{3+} \to
-\hbox{Oxidized ascorbate}
-\\
-&\mathrm{EDTA} \cdot \mathrm{Fe}^{2+} + \mathrm{H}_2
-\mathrm{O}_2 \to
-\mathrm{EDTA} \cdot \mathrm{Fe}^{3+} + \cdot
-\mathrm{OH} + \mathrm{OH}^-
-\end{align*}
-
 One of the many difficulties in the analysis of homologous proteins within one species is the variation of annotations in databases. Each submitted genome uses a different annotation for the genes/ proteins found in their data. Some are achieved through automated alignment and homology assignment. Other annotations are based on historic references made by the researchers at submission. One case are proteins components of the Type IV secretion System (T4SS). Bacterial species that present components for a T4SS, like Bordetella pertussis, Helicobacter pylori and Legionella pneumophila, have had their components described in different ways depending on the researcher submitting genomes,  or as a result of an automated homology search made. One example of the consequences for these variation in annotation of genomes is the L. pneumophila's component DotL (From the Dot/Icm T4SS). It can be found as across literature and genomes as DotL, IcmO, or referred as VirD4 homologue based on its resemblance to the first T4SS defined in Agrobacterium tumefasciens . However, if the text search is done using VirD4 in L. pneumophila, none of these proteins will appear. Instead the results will include LvhD4, VirD4 component, conjugal transfer protein TraG, hypothetical protein or Type IV secretory system conjugative DNA transfer family protein. 
 % **************************************************************
 % Keep this command to avoid text of first page running into the
@@ -82,118 +73,57 @@ Text \cite{4}.
 
 \section{MATERIALS AND METHODS}
 
-\subsection{Materials subsection one}
+\subsection{Current Homology Databases}
 
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
+There exist several homology databases.
 
 
-\subsubsection{Materials subsubsection one.}
-
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text:
-\begin{align}
-\mathrm{LD}^r = \frac{\mathrm{LD}}{A_\mathrm{iso}}
-= 1.5 S \left( 3 \cos^2 \alpha_i - 1 \right)
-\end{align}
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
+\subsection{Helicobacter Homology Database}
 
 
-\subsection{Materials subsection two}
+\subsubsection{Finding Homologies}
 
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text
-(see Figure \ref{NAR-fig1}).
+\paragraph{Homology Groups (HOMID)} are simple 1:1 homologies.
+\paragraph{Combined Homology Groups (COMBID)} are simple 1:n homologies.
+\paragraph{Homology Groups (MULCOM)} are simple m:n homologies.
 
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text.
-\begin{equation*}
-\mathrm{LD} \left( t \right) =
-\sum\limits_i
-a_i \exp \left( \frac{-t}{\tau_i} \right)
-\end{equation*}
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text.
+\subsubsection{Integrating Cross-References}
 
-\begin{figure}[t]
-\begin{center}
-\includegraphics{NAR-fig1.eps}
-\end{center}
-\caption{Caption for figure within column.}
-\label{NAR-fig1}
-\end{figure}
+Uniprot and Cyntia
+
+\subsubsection{Improving Pfam Results}
+
+How many Pfams did I find, how many have been reported by Uniprot
+
+\subsubsection{Improving Gene Ontology relations}
+
+\subsubsection{Integrating SwissModel Protein Projections}
+
 
 
 \section{RESULTS}
 
-\subsection{Results subsection one}
+We have created the Helicobacter Homology Database.
 
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text.
+\subsection{Found Homologies}
+
+\begin{figure}
+	\missingfigure{Distribution of homology sizes}
+	\caption{Distribution of homology group sizes}
+	\label{fig:hom_sizes}
+\end{figure}
+
 
 \begin{table}[b]
 \tableparts{%
-\caption{This is a table caption}
+\caption{Found homologies in the core genomes.}
 \label{table:01}%
 }{%
 \begin{tabular*}{\columnwidth}{@{}lllll@{}}
 \toprule
-Col. head 1 & Col. head 2 & Col. head 3 & Col. head 4 & Col. head 5
+Strain & Proteins/Genes & Regular & Combined & Multi-Combined
 \\
-& (\%) & (s$^{-1}$) & (\%) & (s$^{-1}$)
+& & Homologies & Homologies & Homologies
 \\
 \colrule
 Row 1 & Row 1 & Row 1 & -- & --
@@ -203,147 +133,90 @@ Row 2 & Row 2 & Row 2 & Row 2 & Row 2
 \botrule
 \end{tabular*}%
 }
-{This is a table footnote}
+{The core genomes consist of ...}
 \end{table}
 
+\subsection{Using textmining to improve Gene Ontology}
 
-\subsection{Results subsection two}
+We have applied the Pfam hmmer model to all proteins in our database to get accurate Pfam categories.
+We could thereby find all annotated results in uniprot, and additional ones ....
 
-Text.  Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text (see Table \ref{table:01}).
+Additionally we textmined the Pfam and Interpro descriptions with the GO keywords to receive new relations. We found bla existing relations and some more additional ones.
+We did not report a new relation if our newly found relation is a child of an exisiting one.
 
-Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text (see Figure \ref{NAR-fig2}a).
+We evaluated our tool on the set of interesting genes from the other paper.
 
-Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
+
+\begin{table}[b]
+	\tableparts{%
+		\caption{Textmining results for InterPro and Pfam. Additionally the number of reported entries from Uniprot are given in brackets. The overlap between InterPro and Pfam is exact match, for Gene Ontology an overlap is given if a the same element, or a child is found.}
+		\label{table:tm_performance}%
+	}{%
+		\begin{tabular*}{\columnwidth}{@{}lllll@{}}
+			\toprule
+			Col. head 1 & Col. head 2 & Col. head 3 & Col. head 4 & Col. head 5
+			\\
+			& (\%) & (s$^{-1}$) & (\%) & (s$^{-1}$)
+			\\
+			\colrule
+			Row 1 & Row 1 & Row 1 & -- & --
+			\\
+			Row 2 & Row 2 & Row 2 & Row 2 & Row 2
+			\\
+			\botrule
+		\end{tabular*}%
+	}
+	{The core genomes consist of ...}
+\end{table}
+
+\subsection{Meta-analysis of all H. pylori species}
+
+We want to know, how are the clusters distributed?
+
+All proteins (roughly 10000) form 25000 homology clusters?
+I would have expected roughly 2000 clusters ...
+
+\begin{figure}
+	\missingfigure{MLST tree for given organisms}
+	\caption{MLST tree for given 61 organisms.}
+	\label{fig:mlst_tree}
+\end{figure}
 
 \begin{figure*}[t]
-\begin{center}
-\includegraphics{NAR-fig2.eps}
-\end{center}
-\caption{Caption for wide figure over two columns.
-\textbf{(a)} Left figure.
-\textbf{(b)} Right figure (see (a)).
-}
-\label{NAR-fig2}
+	\begin{center}
+		\missingfigure{something}
+	\end{center}
+	\caption{
+		Clustermap resulting from whether an organism is in a homology group or not.
+	}
+	\label{fig:hom_clustermap}
 \end{figure*}
 
-
-\subsection{Results subsection three}
-
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text.
-
+Also, could we find anything useful with Cyntia's data? \todo{Is there anything we can do with that?}
 
 \section{DISCUSSION}
 
-\subsection{Discussion subsection one}
+\subsection{Accessibility of Information}
 
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text.
+Briefly discuss the user interface here.
 
+\begin{figure}
+	\missingfigure{Screenshot from User Interface}
+	\caption{HPDB user interface.}
+	\label{fig:db_ui}
+\end{figure}
 
-\subsection{Discussion subsection two}
+\subsection{A general database misses a lot}
+We could see that there is a lot of missing information in general databases like uniprot.
 
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text.
+First, updating such large databases is time consuming.
+Second, things should work overall good, however, might break with little details.
 
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
+\subsection{How accurate are the homology clusters?}
 
+Check whether the organisms cluster into groups ...
 
-\subsection{Discussion subsection three}
-
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text.
-
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text.
-
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text. Text. Text. Text. Text.
-Text. Text. Text. Text. Text. Text. Text.
-
+... compare resulting clusters with MLST data?
 
 \section{CONCLUSION}
 

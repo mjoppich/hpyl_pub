@@ -4,6 +4,7 @@ import DownloadArchive from 'material-ui/svg-icons/content/archive';
 import Toggle from 'material-ui/Toggle';
 
 import SwissModelViewer from "./SwissModelViewer";
+import PfamResultViewer from "./PfamResultViewer";
 
 export interface DownloadButtonProps { filename: string, getDownloadContent: any }
 
@@ -327,6 +328,11 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
         return (<SwissModelViewer alignments={elems}/>);
     }
 
+    makePfamInfo( elems )
+    {
+        return (<PfamResultViewer pfamres={elems.PFAMS}/>);
+    }
+
     makeSORFTable(sorfs)
     {
         var sorfInfo = sorfs;
@@ -424,7 +430,7 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
         }
 
         var swissmodel =  this.makeSwissModelInfo(this.props.alignments);
-
+        var pfamanalysis = this.makePfamInfo(this.props.alignments);
 
         var allRows = []
         var allXrefs = []
@@ -550,6 +556,9 @@ export default class MSATableViewer extends React.Component<MSATAbleViewerProps,
 
             <h3>SwissModel</h3>
             {swissmodel}
+
+            <h3>Pfam Analysis</h3>
+            {pfamanalysis}
             </div>
         </div>);
     }
