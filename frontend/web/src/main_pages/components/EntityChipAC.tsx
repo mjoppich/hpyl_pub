@@ -126,7 +126,7 @@ export default class EntityChipAC extends React.Component<EntityChipACProps, Ent
                             fullWidth
                             fullWidthInput
                             floatingLabelText='Entity Element'
-                            hintText='Gene Symbol or miRNA'
+                            hintText='Locus Tag or Gene Symbol'
                             onUpdateInput={(searchText, dataSource, params) => this.handleOrganismAC(searchText)}
                         />
 

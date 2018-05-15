@@ -215,6 +215,20 @@ class HomologyBuilder:
 
             """
 
+            """
+            One of multiple. If excellent hit found, only allow that hit.
+
+            """
+            one2mulHitsConfig = oneMultipleConfig()
+            one2mulHitsConfig.minQueryLength = 0.9
+            one2mulHitsConfig.minSubjectLength = 0.9
+            one2mulHitsConfig.minIdentity = 0.6
+            one2mulHitsConfig.allowMultiple = False
+
+            one2mulHits = oneMultipleHomologs(graph, self.genomeDB, one2mulHitsConfig)
+            homolResults = one2mulHits.analyse()
+            homolResults.toDataBase(self.homolDB)
+
 
             """
             One of multiple. If excellent hit found, allow that one gene is homologous to many other
@@ -418,7 +432,9 @@ class HomologyBuilder:
         allDupRelations = self.geneDupDB.get_gene_relations()
         allDupRelations.toDataBase(self.homolDB)
 
+        self.homolDB.save_to_file(self.basePath + "/homdb_pre_finalize")
         self.homolDB.finalize()
+        self.homolDB.save_to_file(self.basePath + "/homdb_post_finalize")
 
         self.genomeDB.writeCSV(self.basePath + "/genome_seqs/seqs")
 

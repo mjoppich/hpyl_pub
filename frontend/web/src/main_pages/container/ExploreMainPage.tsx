@@ -36,7 +36,23 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
         var allElems = [];
         for (var i = 0; i < this.state.selectedElements.length; ++i)
         {
-            allElems.push(this.state.selectedElements[i].name);
+            var elem = this.state.selectedElements[i];
+
+            if (elem.type == 'locus_tag')
+            {
+                allElems.push(this.state.selectedElements[i].name);
+            }
+        }
+
+        var allHoms = [];
+        for (var i = 0; i < this.state.selectedElements.length; ++i)
+        {
+            var elem = this.state.selectedElements[i];
+
+            if (elem.type == 'HOMS')
+            {
+                allHoms.push(this.state.selectedElements[i].name);
+            }
         }
 
         var allOrgs = [];
@@ -45,7 +61,8 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
             allOrgs.push(this.state.selectedOrganisms[i].id)
         }
 
-        axios.post(config.getRestAddress() + "/clustalign", {genes: allElems, organisms: allOrgs}, config.axiosConfig)
+        var reqData = {genes: allElems, homs:allHoms, organisms: allOrgs};
+        axios.post(config.getRestAddress() + "/clustalign", reqData, config.axiosConfig)
         .then(function (response) {
             console.log(response.data)
 
@@ -83,6 +100,9 @@ class QueryComponent extends React.Component<QueryComponentProps, QueryComponent
         })
         .catch(function (error) {
             console.log(error)
+            console.log("Fetching Info")
+            console.log(reqData)
+
             self.setState({alignments: {}})
         });
 

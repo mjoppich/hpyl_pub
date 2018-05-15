@@ -110,11 +110,10 @@ export default class PfamResultViewer extends React.Component<PfamResultViewerPr
             }
 
             var rowStyle = {};
-
             if (structStuff.length % 2 === 0)
             {
                 rowStyle = {
-                    backgroundColor: 'lightgrey'
+                    backgroundColor: config.table_even_bg
                 }
             }
 

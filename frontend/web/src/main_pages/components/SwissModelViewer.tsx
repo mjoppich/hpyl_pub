@@ -100,9 +100,16 @@ export default class SwissModelViewer extends React.Component<SwissModelViewerPr
                     var qmean_norm = parseFloat((strucElem.qmean_norm).toFixed(5));
                     var gmqe = parseFloat((strucElem.gmqe).toFixed(5));
     
+                    var rowStyle = {};
+                    if (structStuff.length % 2 === 0)
+                    {
+                        rowStyle = {
+                            backgroundColor: config.table_even_bg
+                        }
+                    }
     
                     structStuff.push(
-                        <tr key={structStuff.length}>
+                        <tr key={structStuff.length} style={rowStyle}>
                             <td style={{verticalAlign: 'top'}}>{queryID}<br/>{strucElem.method}<br/>{strucElem['oligo-state']}<br/>{strucElem.provider}</td>
                             <td style={{verticalAlign: 'top'}}>{strucElem.from}-{strucElem.to}<br/>{identity}<br/>{similarity}<br/>{coverage}</td>
                             <td style={{verticalAlign: 'top'}}>{qMean}<br/>{qmean_norm}<br/>{gmqe}</td>

@@ -23,7 +23,7 @@ if __name__ == '__main__':
         print(file)
 
         genomeDB = GenomeDB(fileLocation, loadAll=False)
-        genomeDB.loadGenome(file, True)
+        genomeDB.loadGenome(file, False)
 
         genomeDB.writeBLASTfastas(fileLocation)
 

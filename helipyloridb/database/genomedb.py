@@ -104,8 +104,8 @@ class GenomeDB:
 
         if not os.path.isfile(file):
 
-            if '_' in file:
-                file = file.replace('_', '')
+            #if '_' in file:
+            #    file = file.replace('_', '')
 
             if not os.path.isfile(file):
                 loadedFile = file
@@ -270,8 +270,18 @@ class GenomeDB:
                         translation += "*"
 
                     if translation == None:
-                        print("No Translation found for " + productID + " in genome " + genomeID)
-                        continue
+
+                        translated = ntSeq.translate()
+                        print(translated)
+                        exit()
+
+                        if str(translated).count('*') == 1:
+                            translation = str(translated)
+
+                        else:
+
+                            print("No Translation found for " + productID + " in genome " + genomeID)
+                            continue
 
                     transAA = Seq(str(ntSeq)).translate()
 
@@ -282,10 +292,11 @@ class GenomeDB:
                         print(translation)
                         print()
 
+                    orgnames = mainFeature.qualifiers.get('organism',[genomeID])
 
                     entry = GenomeDBEntry(
                         organismID=genomeID,
-                        organismName=", ".join(mainFeature.qualifiers['organism']),
+                        organismName=", ".join(orgnames),
                         recordID=gb_record.id,
                         entryID=productID,
                         entryNames=makeEntryNames(feature),

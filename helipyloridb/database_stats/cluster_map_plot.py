@@ -24,8 +24,9 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
 
     fileLocation = "/mnt/c/dev/data/haas/homdb/"
+    fileLocation = "/home/mjoppich/ownCloud/data/hpyloriDB/"
 
-    homDB = HomologyDatabase.loadFromFile(fileLocation + "/combed")
+    homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpdb_full_new")
     genomDB = GenomeDB(fileLocation + "/genomes", loadAll=False)
 
     """
@@ -42,9 +43,6 @@ if __name__ == '__main__':
         genomDB.loadGenome(orgname)
     allorgs = list(homDB.get_all_organisms())
 
-    mc = ['4_N1-031C1', '2_N1-025A2', '14_1-20A_UB64', '13_N5-004A1', '3_N1-029C1', '11_N4-029C2', '10_N2-085C2', '1_N1-024A1']
-    nmc = [x for x in allorgs if not x in mc] # and not x.startswith("15")
-
 
     allData = DataFrame()
 
@@ -57,39 +55,6 @@ if __name__ == '__main__':
 
         val = homDB.get_homology_cluster(homid)
 
-        maxlength = 0
-        for org in val:
-
-            geneid = val[org]
-            seq = genomDB.get_sequence(org, geneid)
-
-            if len(seq) > maxlength:
-                maxlength = len(seq)
-
-        if maxlength < 80:
-            continue
-
-        allincluded = 0
-
-        if len(val) < 2:
-            continue
-
-        for org in nmc:
-            if org in val:
-                allincluded += 1
-
-        #if allincluded > 1:# len(allorgs):
-        #    continue
-
-        allincluded = 0
-
-        for org in mc:
-            if org in val:
-                allincluded += 1
-
-        #if allincluded <= 1:
-        #    continue
-
         homClusterIDs.append(homid)
 
     print(allorgs)
@@ -97,7 +62,7 @@ if __name__ == '__main__':
 
     orgMatrix = []
 
-    for org in mc + nmc:
+    for org in allorgs:
 
         orgRes = []
         for homID in homClusterIDs:
@@ -109,101 +74,6 @@ if __name__ == '__main__':
                 orgRes.append(0)
 
         orgMatrix.append(orgRes)
-
-    D = np.matrix(orgMatrix)
-    colors = [1 for x in mc] + [2 for x in nmc]
-
-    # Build a forest and compute the feature importances
-    forest = ExtraTreesClassifier(n_estimators=5, max_features=2, random_state=0)
-
-    forest.fit(D, colors)
-    importances = forest.feature_importances_
-    std = np.std([tree.feature_importances_ for tree in forest.estimators_],
-                 axis=0)
-    indices = np.argsort(importances)[::-1]
-
-    # Print the feature ranking
-    print("Feature ranking:")
-
-    showFeatCount = min([30, D.shape[1], len(homClusterIDs)])
-
-    interestHomCluster = []
-
-    for f in range(showFeatCount):
-        interestHomCluster.append(homClusterIDs[f])
-
-        print("%d. feature %d (%f) %s" % (f + 1, indices[f], importances[indices[f]], homClusterIDs[f]))
-
-
-    for homID in interestHomCluster:
-
-        val = homDB.get_homology_cluster(homID)
-
-        mcc = sum([1 for x in val if x in mc])
-        nmcc = sum([1 for x in val if x in nmc])
-
-
-        print(homID, "MC", mcc, "NMC", nmcc)
-
-    print([int(x.replace('HOMID', '')) for x in interestHomCluster])
-
-
-    # Plot the feature importances of the forest
-    plt.figure()
-    plt.title("Feature importances")
-    plt.bar(range(D.shape[1])[:showFeatCount], importances[indices][:showFeatCount],
-            color="r", yerr=std[indices][:showFeatCount], align="center")
-    plt.xticks(range(showFeatCount), indices[:showFeatCount])
-    plt.xlim([-1, showFeatCount])
-    plt.show()
-
-    model = SelectFromModel(forest, prefit=True)
-    X_new = model.transform(D)
-    print(    X_new.shape)
-
-
-
-
-
-
-
-    exit(0)
-
-
-    pca = decomposition.PCA(n_components=8)
-    projected = pca.fit_transform(D)
-
-    print(projected)
-
-    print(pca.components_)
-
-
-    plt.plot(np.cumsum(pca.explained_variance_ratio_))
-    plt.xlabel('number of components')
-    plt.ylabel('cumulative explained variance');
-    plt.show()
-
-
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    ax.scatter(projected[:,0], projected[:,1], projected[:, 2], c=colors, cmap=plt.cm.get_cmap('spectral', 3), alpha=0.5, marker='o')
-
-
-    #for i,x in enumerate(mc+nmc):
-    #    plt.annotate(x, (projected[i,0], projected[i,1], projected[i,2]))
-
-    plt.xlabel('component 1')
-    plt.ylabel('component 2')
-
-    plt.show()
-
-    exit(0)
-
-
-
-
 
 
     import scipy
@@ -221,10 +91,14 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(8,8))
 
     vXLabels = homClusterIDs
-    vYLabels = mc+nmc
+    vYLabels = allorgs
 
-
-    idx1 = [x for x in range(0, len(vYLabels))]
+    ax1 = fig.add_axes([0.85, leftbottom[1], 0.15, widthheight[1]])
+    Y = sch.linkage(D, method='centroid')
+    Z1 = sch.dendrogram(Y, orientation='right', labels=vYLabels)
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    idx1 = Z1['leaves']
 
     # Compute and plot second dendrogram.
     ax2 = fig.add_axes([leftbottom[0], 0.05, widthheight[0], 0.15])

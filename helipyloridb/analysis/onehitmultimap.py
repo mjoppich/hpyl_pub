@@ -159,10 +159,16 @@ class ManyToOneCombination(GraphUser):
             if possibleMatch and allTargetsLengthMatch:
 
                 #print(vertex.name, len(baseSeq), tree)
+
+
+                edgeSets = set()
+
                 otherNames = set()
                 for edge in usedEdges:
                     otherNames.add(edge.source.name)
                     otherNames.add(edge.target.name)
+
+                    edgeSets.add( (edge.source.name, edge.target.name) )
 
                 for x in otherNames:
                     setRemoveVertexIDs.add(x)
@@ -178,7 +184,7 @@ class ManyToOneCombination(GraphUser):
                 elif len(otherNames) == 1:
 
                     vName = list(otherNames)
-                    retRes.homology_relations.append( (vertex.name, vName[0], {'step': self.stepID}) )
+                    retRes.homology_relations.append( (vertex.name, vName[0], {'step': self.stepID, 'evidences': edgeSets}) )
                 else:
                     self.log_warn("invalid relation with 0 othernames")
 

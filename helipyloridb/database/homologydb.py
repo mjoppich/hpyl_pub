@@ -46,6 +46,10 @@ class HomologyDatabase:
 
         self.multiCombinations = []
 
+    def get_all_ids(self):
+
+        return [x for x in self.homologies] + [x for x in self.combinations]# + [x for x in self.multiCombinations]
+
     def get_all_organisms(self):
 
         orgs = set()
@@ -59,7 +63,10 @@ class HomologyDatabase:
 
     def get_cluster(self, homID):
 
-        clusterProt = self.homologies.get(homID)
+        clusterProt = self.homologies.get(homID, None)
+
+        if clusterProt == None:
+            clusterProt = self.combinations.get(homID, None)
 
         if clusterProt == None:
             return None
@@ -161,6 +168,9 @@ class HomologyDatabase:
                 allElems.add(id1)
                 allElems.add(id2)
 
+                if len(allElems) > 100:
+                    print(id1, id2)
+
                 self.homologies[x] = allElems
                 if properties != None:
                     self.homologyProperties[x][ idtuple ] = mergeDicts(self.homologyProperties[x].get(idtuple, None), properties)
@@ -171,7 +181,14 @@ class HomologyDatabase:
         newRel.add(id1)
         newRel.add(id2)
 
-        homID = "HOMID" + str(len(self.homologies))
+
+        if len (self.homologies) > 0:
+            allIDs = [int(x.replace('HOMID', '')) for x in self.homologies]
+            maxID = max(allIDs) + 1
+        else:
+            maxID = 1
+
+        homID = "HOMID" + str(maxID)
         self.homologies[homID] = newRel
         if properties != None:
             self.homologyProperties[homID][ idtuple ] = properties
@@ -179,10 +196,10 @@ class HomologyDatabase:
     def finalize(self):
 
         #fetch all combid's
-        for combElem in self.combinations:
-            others = self.combinations[combElem]
-            for otherElem in others:
-                self.addHomologyRelation(combElem, otherElem, {'step': 'finalize', 'relation': (combElem, tuple(others))},)
+        #for combElem in self.combinations:
+        #    others = self.combinations[combElem]
+        #    for otherElem in others:
+        #        self.addHomologyRelation(combElem, otherElem, {'step': 'finalize', 'relation': (combElem, tuple(others))},)
 
         changed = True
         while changed:
@@ -205,6 +222,9 @@ class HomologyDatabase:
                     if len(setGenesI.intersection(setGenesJ)) > 0:
                         newSet = setGenesI.union(setGenesJ)
                         self.homologies[xi] = newSet
+
+                        #merge props!
+
                         del self.homologies[xj]
                         changed=True
 

@@ -46,7 +46,7 @@ def allowed_file(filename):
 
 
 #homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp12_hp")
-homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpdb_full")
+homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpdb_full_new")
 genomDB = GenomeDB(fileLocation + "/genomes", loadAll=False)
 
 for orgname in homDB.get_all_organisms():
@@ -140,14 +140,18 @@ def getHomClusterAndAlignment():
     if alignReq == None:
         return app.make_response((jsonify({'error': 'invalid json'}), 400, None))
 
-    if not 'genes' in alignReq:
-        return app.make_response((jsonify({'error': 'must include homid'}), 400, None))
+    if not 'genes' in alignReq and not 'homs' in alignReq:
+        return app.make_response((jsonify({'error': 'must include gene or homid'}), 400, None))
 
 
     gene2homid = {}
-    for geneID in alignReq['genes']:
-        gene2homid[geneID] = homDB.findHomologyForGeneID(geneID)
+    if 'genes' in alignReq:
+        for geneID in alignReq['genes']:
+            gene2homid[geneID] = homDB.findHomologyForGeneID(geneID)
 
+    if 'homs' in alignReq:
+        for homid in alignReq['homs']:
+            gene2homid[homid] = [homid]
 
     alignOrgs = alignReq['organisms'] if ('organisms' in alignReq and len(alignReq['organisms']) > 0) else homDB.get_all_organisms()
 
@@ -181,6 +185,9 @@ def returnAlignments(homIDs, alignOrgs):
         for homID in homIDs[refID]:
             homCluster = homDB.get_cluster(homID)
 
+            if homCluster == None:
+                continue
+
             alignSeqs = []
 
             for org in alignOrgs:
@@ -202,93 +209,96 @@ def returnAlignments(homIDs, alignOrgs):
 
                 seqRecords.append(seq)
 
-            outfasta = open('./tmps/out.fasta', 'w')
-            SeqIO.write(seqRecords, outfasta, "fasta")
-            outfasta.close()
 
-            inmsa = "./tmps/in.msa"
+            if len(seqRecords) > 0:
+                outfasta = open('./tmps/out.fasta', 'w')
+                SeqIO.write(seqRecords, outfasta, "fasta")
+                outfasta.close()
 
-            clustalomega_cline = ClustalOmegaCommandline(infile=outfasta.name, outfile=inmsa,force=True, outfmt='fa', verbose=True, auto=True)
-            print(clustalomega_cline)
-            output = subprocess.getoutput( [str(clustalomega_cline)] )
+                inmsa = "./tmps/in.msa"
 
-            meta_aln = AMAS.MetaAlignment(in_files=[inmsa], data_type='aa', in_format='fasta', cores=1)
-            header, data = meta_aln.get_summaries()
+                clustalomega_cline = ClustalOmegaCommandline(infile=outfasta.name, outfile=inmsa,force=True, outfmt='fa', verbose=True, auto=True)
+                print(clustalomega_cline)
+                output = subprocess.getoutput( [str(clustalomega_cline)] )
+                print("Clustalomega finished")
 
-            for x,y in zip(header, data):
-                print(x,y)
+                meta_aln = AMAS.MetaAlignment(in_files=[inmsa], data_type='aa', in_format='fasta', cores=1)
+                header, data = meta_aln.get_summaries()
 
-            alignment = []
-            with open(inmsa, 'r') as fin:
-                alignment = AlignIO.read(fin, "fasta")
+                for x,y in zip(header, data):
+                    print(x,y)
+
+                alignment = []
+                with open(inmsa, 'r') as fin:
+                    alignment = AlignIO.read(fin, "fasta")
 
 
-            clusterMSA = []
+                clusterMSA = []
 
-            tssList = set()
-            operonsList = set()
-            sorfList = set()
-            allPfamRes = []
+                tssList = set()
+                operonsList = set()
+                sorfList = set()
+                allPfamRes = []
 
-            for seqr in alignment:
+                for seqr in alignment:
 
-                ida = seqr.id.split('_', 1)
+                    ida = seqr.id.split('_', 1)
 
-                if ida[0] == 'AE000511':
+                    if ida[0] == 'AE000511':
 
-                    if opDB.find_gene(ida[1], None) != None:
+                        if opDB.find_gene(ida[1], None) != None:
 
-                        inOperons = opDB.find_gene(ida[1])
+                            inOperons = opDB.find_gene(ida[1])
 
-                        for operon in inOperons:
-                            operonsList.add( operon )
+                            for operon in inOperons:
+                                operonsList.add( operon )
 
-                    if tssDB.find_gene(ida[1], None) != None:
+                        if tssDB.find_gene(ida[1], None) != None:
 
-                        inTSS = tssDB.find_gene(ida[1])
+                            inTSS = tssDB.find_gene(ida[1])
 
-                        for tssid in inTSS:
-                            tssList.add(tssid)
+                            for tssid in inTSS:
+                                tssList.add(tssid)
 
-                    if sorfDB.find_gene(ida[1], None) != None:
-                        inSORF = sorfDB.find_gene(ida[1])
+                        if sorfDB.find_gene(ida[1], None) != None:
+                            inSORF = sorfDB.find_gene(ida[1])
 
-                        for sorfid in inSORF:
-                            sorfList.add(sorfid)
+                            for sorfid in inSORF:
+                                sorfList.add(sorfid)
 
-                orgID = ida[0]
-                genID = ida[1]
+                    orgID = ida[0]
+                    genID = ida[1]
 
-                pfamResIDs = pfamDB.find_gene(orgID, genID)
-                pfamRes = pfamDB.get_pfam_infos(pfamResIDs)
+                    pfamResIDs = pfamDB.find_gene(orgID, genID)
+                    pfamRes = pfamDB.get_pfam_infos(pfamResIDs)
 
-                allPfamRes += pfamRes
+                    allPfamRes += pfamRes
 
-                genomeEntry = seqID2Element[seqr.id].toJSON().copy()
-                foundXRefs = xrefDB.make_infos(ida[1])
+                    genomeEntry = seqID2Element[seqr.id].toJSON().copy()
+                    foundXRefs = xrefDB.make_infos(ida[1])
 
-                genomeEntry['alignment'] = str(seqr.seq)
-                genomeEntry['alignmentNT'] = makeNTCoAlign(seqr.seq, genomeEntry)
-                genomeEntry['xrefs'] = foundXRefs
+                    genomeEntry['alignment'] = str(seqr.seq)
+                    genomeEntry['alignmentNT'] = makeNTCoAlign(seqr.seq, genomeEntry)
+                    genomeEntry['xrefs'] = foundXRefs
 
-                clusterMSA.append( genomeEntry)#{'org': ida[0], 'seqid': ida[1], 'alignment': str(seqr.seq), 'xrefs': foundXRefs} )
+                    clusterMSA.append( genomeEntry)#{'org': ida[0], 'seqid': ida[1], 'alignment': str(seqr.seq), 'xrefs': foundXRefs} )
 
-            operonsInfo = []
-            for operon in operonsList:
-                operonsInfo.append(opDB.get_operon_infos(operon))
+                operonsInfo = []
+                for operon in operonsList:
+                    operonsInfo.append(opDB.get_operon_infos(operon))
 
-            tssInfo = []
-            for tssid in tssList:
-                tssInfo.append(tssDB.get_tss_infos(tssid))
+                tssInfo = []
+                for tssid in tssList:
+                    tssInfo.append(tssDB.get_tss_infos(tssid))
 
-            sorfInfo = []
-            for sorfid in sorfList:
-                sorfInfo.append(sorfDB.get_sorf_infos(sorfid))
+                sorfInfo = []
+                for sorfid in sorfList:
+                    sorfInfo.append(sorfDB.get_sorf_infos(sorfid))
 
-            for x in allPfamRes:
-                print(x)
+                for x in allPfamRes:
+                    print(x)
 
-            jsonResult[refID].append({'msa': clusterMSA, 'homid': homID, 'TSS': tssInfo, 'OPERONS': operonsInfo, 'SORFS': sorfInfo, 'PFAMS': allPfamRes})
+                jsonResult[refID].append({'msa': clusterMSA, 'homid': homID, 'TSS': tssInfo, 'OPERONS': operonsInfo, 'SORFS': sorfInfo, 'PFAMS': allPfamRes})
 
     print(jsonResult)
 
@@ -330,8 +340,8 @@ def makeNTCoAlign(alignAA, genEntry):
 def findID():
 
     jsonResult = {}
-    jsonResult['genomes'] = []
-    jsonResult['proteins'] = []
+    jsonResult['locus_tag'] = []
+    jsonResult['HOMS'] = []
 
     searchWords = request.get_json(force=True, silent=True)
     searchWord = searchWords['search']
@@ -343,20 +353,23 @@ def findID():
 
     reMatch = re.compile(searchWord)
 
-    for orgname in homDB.get_all_organisms():
+    for homid in homDB.get_all_ids():
+        if reMatch.match(homid):
+            jsonResult['HOMS'].append(homid)
 
-        if reMatch.match(orgname):
-            jsonResult['genomes'].append(orgname)
-
-            if len(jsonResult['genomes']) > 100:
+            if len(jsonResult['HOMS']) > 100:
                 break
+
 
     for orgname in homDB.get_all_organisms():
 
         for protname in genomDB.get_sequences_for_genome(orgname):
 
             if reMatch.match(protname):
-                jsonResult['proteins'].append(protname)
+                jsonResult['locus_tag'].append(protname)
+
+                if len(jsonResult['locus_tag']) > 100:
+                    break
 
     allResults = []
 

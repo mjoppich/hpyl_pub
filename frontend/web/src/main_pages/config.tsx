@@ -10,6 +10,8 @@ export default class config {
         return this.restServer + ":" + this.restPort ;
     }
 
+    static table_even_bg = 'lightgrey';
+
     static axiosConfig = {
         crossdomain: true,
         headers: {
