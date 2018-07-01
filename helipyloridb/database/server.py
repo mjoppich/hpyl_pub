@@ -503,10 +503,10 @@ if __name__ == '__main__':
     app.run(threaded=True, host="0.0.0.0", port=args.port)
 
 
-def gunicorn_start(genomes, databases, tmpdir):
+def gunicorn_start(genomes, databases, tmpdir, clustalo):
     parser = getCLParser()
 
-    argstr = "--genomes {genomesdir} --databases {databases} --tmp {tmpdir}".format(genomesdir=genomes, databases=databases, tmpdir=tmpdir)
+    argstr = "--genomes {genomesdir} --databases {databases} --tmp {tmpdir} --clustalo {clustalo}".format(genomesdir=genomes, databases=databases, tmpdir=tmpdir, clustalo=clustalo)
 
     print("Starting app with")
     print(argstr)
