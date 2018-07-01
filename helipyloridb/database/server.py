@@ -464,7 +464,7 @@ def start_app_from_args(args):
     clustalobin = args.clustalo.name
 
     homDB = HomologyDatabase.loadFromFile(args.databases + "/homdb/" + "/hpdb_full_new")
-    xrefDB = XRefDatabase(args.databases + "/homdb/" + "/hpdb_full_xref")
+    xrefDB = XRefDatabase(gobo = args.databases + "/obos/go.obo", fileName=args.databases + "/homdb/" + "/hpdb_full_xref")
     opDB = OperonDB.from_cs_operons(args.databases + "/sharma/operons.xlsx")
     tssDB = TSSDB.from_cs_tss(args.databases + "/sharma/tss.xlsx")
     sorfDB = SORFDB.from_cs_sorfs(args.databases + "/sharma/sorfs.xlsx")

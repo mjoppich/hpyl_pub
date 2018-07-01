@@ -9,7 +9,7 @@ from utils.GeneOntology import GeneOntology
 
 class XRefDatabase:
 
-    def __init__(self, fileName=fileLocation + "/hpp12_hp_xref"):
+    def __init__(self, gobo, fileName=fileLocation + "/hpp12_hp_xref"):
 
         self.df = DataFrame.parseFromFile(fileName)
 
@@ -23,7 +23,7 @@ class XRefDatabase:
 
         }
 
-        self.go = GeneOntology("/mnt/c/ownCloud/data/" + "miRExplore/go/go.obo")
+        self.go = GeneOntology(gobo)
 
         for row in self.df:
             elemName = row['GeneIdentity.GENE_NAME']
@@ -138,7 +138,7 @@ class XRefDatabase:
 
 if __name__ == '__main__':
 
-    db = XRefDatabase()
+    db = XRefDatabase(None)
 
     row = db.get_infos('jhp_1366')
     print(row.to_pairs())
