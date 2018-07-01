@@ -101,6 +101,10 @@ class HomDBAnalyser:
 
             seqRecords.append(seq)
 
+        return self.align_clustalW_records(seqRecords)
+
+
+    def align_clustalW_records(self, seqRecords):
 
         with tempfile.NamedTemporaryFile('w', delete=True) as tmpFastaFile, tempfile.NamedTemporaryFile('w', delete=True) as tmpMSAFile:
 
@@ -112,7 +116,7 @@ class HomDBAnalyser:
                 SeqIO.write(seqRecords, tmpFastaFile, "fasta")
                 tmpFastaFile.flush()
 
-                clustalomega_cline = ClustalwCommandline(infile=tmpFastaFile.name, outfile=tmpMSAFile.name, output='fasta', gapopen=-10, gapext=-0.01)
+                clustalomega_cline = ClustalwCommandline(infile=tmpFastaFile.name, outfile=tmpMSAFile.name, output='fasta', gapopen=-1, gapext=-0.1)
                 print(clustalomega_cline)
                 output = subprocess.getoutput([str(clustalomega_cline)])
                 print("msa finished")

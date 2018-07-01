@@ -1,4 +1,5 @@
 import io
+import re
 from collections import defaultdict
 from utils import mergeDicts
 
@@ -177,21 +178,28 @@ class HomologyDatabase:
 
                 return
 
-        newRel = set()
-        newRel.add(id1)
-        newRel.add(id2)
+        self.make_new_homology_relation(idtuple, properties)
 
+    def make_new_homology_relation(self, idtuple, properties, homPrefix=""):
+        newRel = set()
+        newRel.add(idtuple[0])
+        newRel.add(idtuple[1])
+
+        rre = re.compile(r"\D")
 
         if len (self.homologies) > 0:
-            allIDs = [int(x.replace('HOMID', '')) for x in self.homologies]
+            allIDs = [int(rre.sub("", x)) for x in self.homologies]
+            #allIDs = [int(x.replace('HOMID', '')) for x in self.homologies]
             maxID = max(allIDs) + 1
         else:
             maxID = 1
 
-        homID = "HOMID" + str(maxID)
+        homID = homPrefix + "HOMID" + str(maxID)
         self.homologies[homID] = newRel
         if properties != None:
             self.homologyProperties[homID][ idtuple ] = properties
+
+        return homID
 
     def finalize(self):
 
@@ -302,10 +310,12 @@ class HomologyDatabase:
                     homdb.combinations[aline[0]].add( (aline[1], aline[2]) )
                 elif aline[0].startswith('MULCMB'):
                     continue
-                elif aline[0].startswith('HOMID'):
-                    homdb.homologies[aline[0]].add( (aline[1], aline[2]) )
-                else:
+                elif aline[0].startswith("#"):
                     continue
+                else:# aline[0].startswith('HOMID'):
+                    homdb.homologies[aline[0]].add( (aline[1], aline[2]) )
+                #else:
+                #    continue
 
 
         return homdb

@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     fileLocation = "/mnt/c/dev/data/haas/homdb/"
 
-    homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp_split2")
+    homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp_split")
     genomDB = GenomeDB(fileLocation + "/genomes", loadAll=False)
 
     allorgs = homDB.get_all_organisms()
@@ -41,17 +41,15 @@ if __name__ == '__main__':
         hasit1 = "1_N1-024A1" in [x for x in mc if x in clust]
         hasit14 = "14_1-20A_UB64" in [x for x in mc if x in clust]
 
-        if nmcCount <= 0 and mcCount >= 2:#mcCount == 0 and (hasit15 or hasit12):
+        hasitJ99 = "AE001439" in clust
+        hasitSS1 = "CP009259" in clust
+
+        if hasitJ99 and hasitSS1 and nmcCount == 0 and mcCount > 0:
             print(homID, mcCount, nmcCount, clust)
+            homlist.append(homID)
 
-
-            #homlist.append(homID)
-            #for x in clust:
-            #    print(x, clust[x])
-
-        if mcCount <= 2 and nmcCount >=4 and False:# and not hasit15: #and nmcCount <= 3:
+        if not hasitSS1 and not hasitJ99 and mcCount == 0 and nmcCount > 0:
             print(homID, mcCount, nmcCount, clust)
-
             homlist.append(homID)
 
     print(homlist)

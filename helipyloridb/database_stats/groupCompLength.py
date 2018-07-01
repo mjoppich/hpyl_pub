@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     fileLocation = "/mnt/c/dev/data/haas/homdb/"
 
-    homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp_comb")
+    homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp_split")
     genomDB = GenomeDB(fileLocation + "/genomes", loadAll=False)
 
     allorgs = homDB.get_all_organisms()

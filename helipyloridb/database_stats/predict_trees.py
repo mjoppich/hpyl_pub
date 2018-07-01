@@ -1,4 +1,5 @@
 import random
+import re
 import sys,os
 
 from sklearn.ensemble import ExtraTreesClassifier
@@ -54,7 +55,7 @@ def printModelSels(treeModel):
 
         print(homID, "MC", mcc, "NMC", nmcc)
 
-    intHomIDs = [int(x.replace('HOMID', '')) for x in interestHomCluster]
+    intHomIDs = [x for x in interestHomCluster]
     print(intHomIDs)
 
     return intHomIDs
@@ -64,7 +65,7 @@ if __name__ == '__main__':
 
     fileLocation = "/mnt/c/dev/data/haas/homdb/"
 
-    homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp_comb")
+    homDB = HomologyDatabase.loadFromFile(fileLocation + "/hpp_split")
     genomDB = GenomeDB(fileLocation + "/genomes", loadAll=False)
 
     """
@@ -80,14 +81,25 @@ if __name__ == '__main__':
     thoms = ['HOMID1448', 'HOMID1742', 'HOMID1692', 'HOMID1795', 'HOMID2024', 'HOMID2027', 'HOMID1621', 'HOMID1338', 'HOMID1672', 'HOMID1693']
     thoms = [1549, 1753, 1539, 1971, 1585, 1547, 1820, 1545, 1544, 1555, 1787, 1776, 1634]
 
+
+    thoms = ['HOMID2364', 'HOMID2388', 'HOMID1942', 'HOMID2293', 'HOMID2311', 'HOMID2294', 'HOMID2363', 'HOMID2258', 'HOMID2260', 'HOMID2287', 'HOMID1924', 'HOMID1937', 'HOMID1927', 'HOMID2263', 'HOMID2323', 'HOMID2290', 'HOMID2354', 'HOMID1934', 'HOMID2306', 'HOMID2349', 'HOMID2316', 'HOMID1919', 'HOMID2320', 'HOMID2308', 'HOMID1925', 'HOMID2278', 'HOMID2261', 'HOMID2353', 'HOMID2285', 'HOMID2291', 'HOMID2313', 'HOMID2385', 'HOMID2376', 'HOMID2297', 'HOMID2347', 'HOMID2345', 'HOMID2370', 'HOMID2340', 'HOMID2283', 'HOMID2299', 'HOMID2372', 'HOMID1928', 'HOMID2281', 'HOMID2375', 'HOMID2366', 'HOMID2277', 'HOMID1916', 'HOMID2284', 'HOMID1922', 'HOMID2307', 'HOMID1943', 'HOMID2262', 'HOMID2300', 'HOMID2322', 'HOMID2050', 'HOMID2346', 'HOMID2302', 'HOMID2296', 'HOMID2251', 'HOMID2391', 'HOMID2298', 'HOMID2275', 'HOMID2374', 'HOMID2337', 'HOMID2315', 'HOMID2371', 'HOMID2348', 'HOMID2256', 'HOMID2355', 'HOMID2387', 'HOMID2317', 'HOMID2368', 'HOMID2289', 'HOMID2377', 'HOMID1923', 'HOMID1939', 'HOMID2373', 'HOMID2301', 'HOMID2324', 'HOMID2386', 'HOMID2310', 'HOMID2360', 'HOMID2352', 'HOMID2344', 'HOMID2312', 'HOMID2042', 'HOMID2381', 'HOMID2357', 'HOMID1920', 'HOMID2380', 'HOMID2367', 'HOMID2369', 'HOMID1935', 'HOMID2341', 'HOMID2274', 'HOMID2305', 'HOMID2384', 'HOMID2319', 'HOMID2359', 'HOMID2379', 'HOMID2303', 'HOMID2336', 'HOMID2342', 'HOMID2390', 'HOMID2365', 'HOMID2358', 'HOMID2265', 'HOMID2250', 'HOMID2350', 'HOMID2314', 'HOMID2351', 'HOMID2318', 'HOMID2304', 'HOMID1917', 'HOMID2288', 'HOMID2282', 'HOMID2383', 'HOMID1926', 'HOMID2339', 'HOMID2389', 'HOMID2378', 'HOMID1930', 'HOMID2321', 'HOMID2362', 'HOMID1940', 'HOMID2279', 'HOMID2309', 'HOMID2338', 'HOMID2286', 'HOMID2382', 'HOMID1933', 'HOMID2343', 'HOMID2361', 'HOMID2272', 'HOMID2292', 'HOMID2356', 'sp_HOMID2424', 'sp_HOMID2436']
+
+    thoms = ['HOMID403', 'HOMID1649', 'HOMID981', 'HOMID607', 'HOMID346']
+
+    thoms =['HOMID1610', 'HOMID403', 'HOMID1508', 'HOMID1243', 'HOMID1649', 'HOMID1849', 'HOMID1254', 'HOMID1229', 'HOMID1826', 'HOMID1795', 'HOMID1703', 'HOMID1662', 'HOMID1623', 'HOMID981', 'HOMID1573', 'HOMID1936', 'HOMID1609', 'HOMID607', 'HOMID1396', 'HOMID346', 'HOMID1611', 'HOMID1958', 'HOMID1618', 'HOMID1781', 'HOMID1898', 'HOMID1749', 'HOMID1463', 'HOMID1608', 'HOMID1335', 'HOMID1830', 'HOMID1671', 'HOMID1531', 'HOMID2022', 'HOMID1083', 'HOMID1920', 'HOMID1935', 'HOMID1600', 'HOMID632', 'HOMID1845', 'HOMID1235', 'HOMID1866', 'HOMID1633', 'HOMID1739', 'HOMID1637', 'HOMID1323', 'HOMID1357', 'HOMID1612', 'HOMID1582', 'HOMID1677', 'HOMID1688', 'HOMID1815', 'sp_HOMID2404', 'sp_HOMID2436', 'sp_HOMID2463', 'sp_HOMID2486', 'sp_HOMID2494', 'sp_HOMID2501', 'sp_HOMID2502']
+
+
+
     targetHOMIDS = []
 
     for x in thoms:
         if isinstance(x, str):
             targetHOMIDS.append(x)
-        elif isinstance(x, int):
-            targetHOMIDS.append("HOMID"+str(x))
 
+
+
+
+    expectedFeatureCount = 5
 
     for orgname in homDB.get_all_organisms():
         genomDB.loadGenome(orgname)
@@ -120,8 +132,9 @@ if __name__ == '__main__':
                 maxlength = len(seq)
 
 
-        #if not homid in targetHOMIDS:
-        #    continue
+        if not homid in targetHOMIDS:
+            continue
+
 
 
         if len(val)  <2:
@@ -144,8 +157,8 @@ if __name__ == '__main__':
             continue
 
 
-        if nmcIncluded > 2 or mcInlcuded < 2:
-            continue
+        #if nmcIncluded > 2 or mcInlcuded < 2:
+            #continue
 
         """
         #if nmcIncluded < mcInlcuded:
@@ -153,6 +166,31 @@ if __name__ == '__main__':
         """
 
         homClusterIDs.append(homid)
+
+    df = DataFrame()
+    df.addColumns(['sample'] + [homid for homid in targetHOMIDS])
+
+    for org in mc+nmc:
+
+
+        rowdict = {
+            'sample': org
+        }
+
+        for homid in targetHOMIDS:
+
+            homID = homid
+            val = homDB.get_cluster(homID)
+
+            if org in val:
+                rowdict[homID] = 1
+            else:
+                rowdict[homID] = 0
+
+        dfrow = DataRow.fromDict(rowdict)
+        df.addRow(dfrow)
+
+    df.export(outFile=None)
 
     print(allorgs)
     print(len(homClusterIDs))
@@ -179,7 +217,10 @@ if __name__ == '__main__':
     numCorrect = 0
     targetHOMS = []
 
-    while numCorrect < len(mc+nmc):
+    tries = 0
+    while numCorrect < len(mc+nmc) and tries < 50:
+
+        tries += 1
 
         trainMatrix = []
         trainRes = []
@@ -220,7 +261,7 @@ if __name__ == '__main__':
         trainingMat = np.array(trainMatrix)
 
         # Build a forest and compute the feature importances
-        forest = ExtraTreesClassifier(n_estimators=1, max_features=len(targetHOMIDS))
+        forest = ExtraTreesClassifier(n_estimators=5, max_features=expectedFeatureCount)
 
         #forest = LinearSVC()
 
@@ -284,7 +325,7 @@ if __name__ == '__main__':
 
         print(allhoms)
 
-        targetHOMS = [int(x.replace('HOMID', '')) for x in allhoms]
+        targetHOMS = [x for x in allhoms]
 
         print(targetHOMS)
 
@@ -301,7 +342,7 @@ if __name__ == '__main__':
         def printHOM(homid):
             print(homid)
 
-            aligned = analyse.cluster_align('HOMID' + str(homid))
+            aligned = analyse.cluster_align(homid)
             longest = ""
 
             for rec in aligned._records:
@@ -311,7 +352,7 @@ if __name__ == '__main__':
 
                 print(rec.seq, rec.id)
 
-            return ('HOMID' + str(homid), longest)
+            return (homid, longest)
 
 
         allseqs = []
@@ -322,7 +363,7 @@ if __name__ == '__main__':
 
 
     df = DataFrame()
-    df.addColumns(['sample'] + ['HOMID'+str(homid) for homid in targetHOMS])
+    df.addColumns(['sample'] + [homid for homid in targetHOMS])
 
     for org in mc+nmc:
 
@@ -333,7 +374,7 @@ if __name__ == '__main__':
 
         for homid in targetHOMS:
 
-            homID = 'HOMID' + str(homid)
+            homID = homid
             val = homDB.get_cluster(homID)
 
             if org in val:
