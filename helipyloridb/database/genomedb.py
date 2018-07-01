@@ -7,7 +7,7 @@ import sys
 from Bio import SeqIO
 from Bio.Seq import Seq
 
-from utils import fileLocation
+from utils.utils import fileLocation
 
 class GenomeDBEntry:
 

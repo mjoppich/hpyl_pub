@@ -1,19 +1,12 @@
 import sys
 import os
-from collections import Counter, defaultdict
+from collections import Counter
 
 sys.path.insert(0, str(os.path.dirname(os.path.realpath(__file__))) + "/../")
 
-
-import random
-import string
-import math
-
-from analysis.homologybuilder import HomologyBuilder
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
-import numpy
+from utils.utils import fileLocation
 
 if __name__ == '__main__':
 

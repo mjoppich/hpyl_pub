@@ -3,7 +3,7 @@ from itertools import chain
 
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
+from utils.utils import fileLocation
 
 import Bio.Alphabet.Reduced
 

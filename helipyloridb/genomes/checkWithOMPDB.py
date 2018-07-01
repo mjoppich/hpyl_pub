@@ -1,7 +1,7 @@
 import csv
 
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
+from utils.utils import fileLocation
 
 with open(fileLocation + "OMP_Database_v3.csv") as infile:
 

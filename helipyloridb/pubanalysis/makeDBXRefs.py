@@ -1,5 +1,5 @@
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
+from utils.utils import fileLocation
 from xrefs.GeneIdentity import GeneIdentity
 from xrefs.uniprotStore import UniprotStore
 

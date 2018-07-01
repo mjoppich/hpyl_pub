@@ -1,6 +1,6 @@
 import copy
 
-from utils import dictionaryHash, dictionaryEquals
+from utils.utils import dictionaryHash, dictionaryEquals
 
 
 class Edge:

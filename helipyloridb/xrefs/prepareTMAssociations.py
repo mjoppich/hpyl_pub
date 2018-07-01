@@ -1,6 +1,6 @@
 from porestat.utils.DataFrame import DataFrame, DataRow
 
-from utils import fileLocation
+from utils.utils import fileLocation
 from xrefs.Synfile import Synfile
 
 from collections import defaultdict

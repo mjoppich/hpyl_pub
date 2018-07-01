@@ -1,5 +1,4 @@
 from assemblygraph.edge import Edge, UndirectedEdge
-from utils import dictionaryHash
 
 
 class Vertex:

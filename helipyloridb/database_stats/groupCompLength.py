@@ -6,13 +6,6 @@ sys.path.insert(0, str(os.path.dirname(os.path.realpath(__file__))) + "/../../he
 
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
-from porestat.utils.DataFrame import DataFrame, DataRow
-
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 def intOverlap(a, b):

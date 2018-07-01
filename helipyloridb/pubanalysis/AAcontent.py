@@ -2,15 +2,11 @@ from collections import defaultdict, OrderedDict
 
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
-import matplotlib.pyplot as plt
+from utils.utils import fileLocation
 from scipy.stats import ks_2samp
 import matplotlib.pyplot as plt
 
-import matplotlib.cm as cm
 import matplotlib
-import numpy as np
-
 
 if __name__ == '__main__':
 

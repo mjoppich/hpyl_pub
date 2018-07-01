@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import os
 
-from utils import fileLocation
+from utils.utils import fileLocation
 from utils.DataFrame import DataFrame
 from utils.GeneOntology import GeneOntology
 

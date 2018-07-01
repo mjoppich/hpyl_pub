@@ -11,15 +11,10 @@ sys.path.insert(0, str(os.path.dirname(os.path.realpath(__file__))) + "/../")
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
-import random
-import string
-import math
 
-from analysis.homologybuilder import HomologyBuilder
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
-import numpy
+from utils.utils import fileLocation
 
 interestComps = {(('AE000511', 'HP_0868'), ('CP001217', 'HPP12_0868')),
                  (('AE000511', 'HP_0036'), ('CP001217', 'HPP12_0032')),

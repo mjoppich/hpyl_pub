@@ -1,6 +1,6 @@
 from lxml import etree
 
-from utils import fileLocation
+from utils.utils import fileLocation
 from xrefs.TextmineDocument import TextMineDocument
 from xrefs.tmSentenicer import Sentenicer
 

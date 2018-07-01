@@ -2,23 +2,17 @@ import sys,os
 
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectFromModel
-from sklearn.svm import LinearSVC
 
 sys.path.insert(0, str(os.path.dirname(os.path.realpath(__file__))) + "/../../helipyloridb")
 
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
-from porestat.utils.DataFrame import DataFrame, DataRow
+from porestat.utils.DataFrame import DataFrame
 
-import pandas as pd
-import seaborn as sns
 import numpy as np
 
 from sklearn import decomposition
-from sklearn import datasets
 
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
@@ -201,13 +195,6 @@ if __name__ == '__main__':
 
     exit(0)
 
-
-
-
-
-
-    import scipy
-    import pylab
     import scipy.cluster.hierarchy as sch
 
     # Generate random features and distance matrix.

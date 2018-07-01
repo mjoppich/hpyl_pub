@@ -2,22 +2,19 @@ import argparse
 import re
 import shlex
 import sys, os
-from io import StringIO
 
 from database.PfamResultDB import PfamResultDB
 
 sys.path.insert(0, str(os.path.dirname(os.path.realpath(__file__))) + "/../../helipyloridb")
 
-from flask import Flask, jsonify, request, redirect, url_for, send_from_directory
+from flask import Flask, jsonify, request
 import json
-import pprint
 from collections import defaultdict
 import urllib.request
 
 from Bio.Alphabet import generic_dna
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Align import MultipleSeqAlignment
 
 from database.OperonDB import OperonDB
 from database.SORFDB import SORFDB
@@ -25,7 +22,6 @@ from database.TSSDB import TSSDB
 from database.XRefDatabase import XRefDatabase
 from database.genomedb import GenomeDB
 from database.homologydb import HomologyDatabase
-from utils import fileLocation
 
 from Bio.Align.Applications import ClustalOmegaCommandline
 

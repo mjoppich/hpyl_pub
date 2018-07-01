@@ -1,7 +1,7 @@
 import io
 import re
 from collections import defaultdict
-from utils import mergeDicts
+from utils.utils import mergeDicts
 
 
 class MatchingRegion:
