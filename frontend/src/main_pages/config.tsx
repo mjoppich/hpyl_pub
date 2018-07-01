@@ -2,22 +2,34 @@
 
 export default class config {
 
-    static restServer = 'http://localhost'
-    static restPort = '5001'
+    static restServer = 'http://localhost'//'https://turingwww.bio.ifi.lmu.de'
+    static restPort = '5000'
+    static restFolder = null;//'neutrophils'
+
+    static table_even_bg = 'lightgrey';
 
     static getRestAddress()
     {
-        return this.restServer + ":" + this.restPort ;
-    }
+        var basePart = this.restServer;
 
-    static table_even_bg = 'lightgrey';
+        if ((this.restPort != null) && (this.restPort.length > 0))
+        {
+                basePart += ":" + this.restPort;
+        }
+
+        if ((this.restFolder != null) && (this.restFolder.length > 0))
+        {
+            basePart += "/" + this.restFolder;
+        }
+
+        return basePart;
+    }
 
     static axiosConfig = {
         crossdomain: true,
         headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS"
+            "Access-Control-Allow-Origin": "*"
         }
       };
- 
+
 }

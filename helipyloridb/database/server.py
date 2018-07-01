@@ -33,7 +33,11 @@ from Bio import SeqIO, AlignIO
 import subprocess
 from flask_cors import CORS
 
-dataurl = str(os.path.dirname(os.path.realpath(__file__))) + "/../../" + 'frontend/web/src/static/'
+dataurl = str(os.path.dirname(os.path.realpath(__file__))) + "/../../" + 'frontend/src/static/'
+
+dataurl = os.path.abspath(dataurl)
+
+print("Loading website from", dataurl)
 
 app = Flask(__name__, static_folder=dataurl, static_url_path='/static')
 CORS(app)
@@ -50,7 +54,12 @@ def allowed_file(filename):
 
 # genomDB.writeBLASTfastas(fileLocation + "/genomes")
 # genomDB.writePFAMfastas('/mnt/c/Users/mjopp/Desktop/genomdb')
+@app.route('/')
+def root():
 
+    retFile = 'index.html'
+
+    return app.send_static_file(retFile)
 
 @app.route('/test', methods=['GET', 'POST'])
 def test():
@@ -192,23 +201,17 @@ def returnAlignments(homIDs, alignOrgs):
                 seqRecords.append(seq)
 
             if len(seqRecords) > 0:
-                outfasta = open('./tmps/out.fasta', 'w')
+                outfasta = open(tmpfolder + '/out.fasta', 'w')
                 SeqIO.write(seqRecords, outfasta, "fasta")
                 outfasta.close()
 
-                inmsa = "./tmps/in.msa"
+                inmsa = tmpfolder + "/in.msa"
 
-                clustalomega_cline = ClustalOmegaCommandline(infile=outfasta.name, outfile=inmsa, force=True,
+                clustalomega_cline = ClustalOmegaCommandline(cmd=clustalobin, infile=outfasta.name, outfile=inmsa, force=True,
                                                              outfmt='fa', verbose=True, auto=True)
                 print(clustalomega_cline)
                 output = subprocess.getoutput([str(clustalomega_cline)])
                 print("Clustalomega finished")
-
-                meta_aln = AMAS.MetaAlignment(in_files=[inmsa], data_type='aa', in_format='fasta', cores=1)
-                header, data = meta_aln.get_summaries()
-
-                for x, y in zip(header, data):
-                    print(x, y)
 
                 alignment = []
                 with open(inmsa, 'r') as fin:
@@ -443,6 +446,8 @@ tssDB = None
 sorfDB = None
 pfamDB = None
 genomDB = None
+tmpfolder = "/tmp/"
+clustalobin = None
 
 
 def start_app_from_args(args):
@@ -453,6 +458,12 @@ def start_app_from_args(args):
     global sorfDB
     global pfamDB
     global tssDB
+    global tmpfolder
+    global clustalobin
+
+
+    tmpfolder = args.tmp
+    clustalobin = args.clustalo.name
 
     homDB = HomologyDatabase.loadFromFile(args.databases + "/homdb/" + "/hpdb_full_new")
     xrefDB = XRefDatabase(args.databases + "/homdb/" + "/hpdb_full_xref")
@@ -469,8 +480,10 @@ def start_app_from_args(args):
 
 def getCLParser():
     parser = argparse.ArgumentParser(description='Start hpylDB Data Server', add_help=False)
-    parser.add_argument('-g', '--genomes', type=str)
-    parser.add_argument('-d', '--databases', type=str)
+    parser.add_argument('-g', '--genomes', type=str, required=True)
+    parser.add_argument('-d', '--databases', type=str, required=True)
+    parser.add_argument('--tmp', type=str, required=True)
+    parser.add_argument('--clustalo', type=argparse.FileType('r'), required=False, default="/usr/bin/clustalo")
     parser.add_argument('-p', '--port', type=int, help="port to run on", required=False, default=5000)
 
     return parser
@@ -492,10 +505,10 @@ if __name__ == '__main__':
     app.run(threaded=True, host="0.0.0.0", port=args.port)
 
 
-def gunicorn_start(genomes, databases):
+def gunicorn_start(genomes, databases, tmpdir):
     parser = getCLParser()
 
-    argstr = "--genomes {genomesdir} --databases {datadir}/".format(genomesdir=genomes, databases=databases)
+    argstr = "--genomes {genomesdir} --databases {databases} --tmp {tmpdir}".format(genomesdir=genomes, databases=databases, tmpdir=tmpdir)
 
     print("Starting app with")
     print(argstr)

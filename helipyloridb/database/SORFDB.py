@@ -151,8 +151,6 @@ class SORFDB:
 
             sorfInfos['PROPS'] = sorfProps
 
-            if sorfLT == 'HP_nc8110':
-                print(row)
 
             sorfDB.sorfs[curSORF] = sorfInfos
 

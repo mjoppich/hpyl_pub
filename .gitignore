@@ -6,6 +6,8 @@ __pycache__/
 .vscode
 .idea
 
+node_modules/
+
 # C extensions
 *.so
 
