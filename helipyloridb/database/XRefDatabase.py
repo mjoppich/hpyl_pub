@@ -1,10 +1,10 @@
 from collections import defaultdict
 
 import os
-from nertoolkit.geneontology.GeneOntology import GeneOntology, GOTerm
-from porestat.utils.DataFrame import DataFrame
 
 from utils import fileLocation
+from utils.DataFrame import DataFrame
+from utils.GeneOntology import GeneOntology
 
 
 class XRefDatabase:
