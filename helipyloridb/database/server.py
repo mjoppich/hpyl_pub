@@ -12,7 +12,7 @@ from flask import Flask, jsonify, request, redirect, url_for, send_from_director
 import json
 import pprint
 from collections import defaultdict
-import requests
+import urllib.request
 
 from Bio.Alphabet import generic_dna
 from Bio.Seq import Seq
@@ -425,11 +425,13 @@ def make_swissmodel_query():
 
     for uniprotID in uniprotIDs:
         try:
-            r = requests.get(
+            r = urllib.request.urlopen(
                 'https://swissmodel.expasy.org/repository/uniprot/' + uniprotID + '.json?provider=swissmodel')
 
-            if r.status_code == 200:
-                retRes[uniprotID] = r.json()
+            if r.status == 200:
+                response_text = r.read()
+                j = json.loads(response_text.decode("utf-8"))
+                retRes[uniprotID] = j
 
         except:
             pass
